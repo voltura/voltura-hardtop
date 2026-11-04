@@ -229,3 +229,5 @@ details p { padding: 0 38px 22px 0; color: var(--muted); font-size: .88rem; max-
   .principles, .principles h3, .principles p, .principles .eyebrow, .principles .text-link { color: CanvasText; background: Canvas; }
   .availability-dot { background: Highlight; }
 }
+
+.demo video { display: block; width: 100%; height: auto; border-radius: 18px; background: #f5f7fc; }

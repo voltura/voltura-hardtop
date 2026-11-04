@@ -10,7 +10,7 @@ Pin the windows you need above the rest. A modern Windows tray companion built w
 [![Windows x64](https://img.shields.io/badge/Windows-x64-0078D4)](https://hardtop.voltura.se/#download)
 [![Issues](https://img.shields.io/github/issues/voltura/voltura-hardtop)](https://github.com/voltura/voltura-hardtop/issues)
 
-**[Website](https://hardtop.voltura.se/)** · **[Download](https://github.com/voltura/voltura-hardtop/releases/latest)** · **[SourceForge](https://sourceforge.net/projects/voltura-hardtop/)** · **[Help](SUPPORT.md)**
+**[Website](https://hardtop.voltura.se/)** · **[Watch the demo](https://www.youtube.com/watch?v=2ecOkoOEgUc)** · **[Download](https://github.com/voltura/voltura-hardtop/releases/latest)** · **[SourceForge](https://sourceforge.net/projects/voltura-hardtop/)** · **[Help](SUPPORT.md)**
 
 ![Voltura HardTop window picker](site/assets/app.png)
 
