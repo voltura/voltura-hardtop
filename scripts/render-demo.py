@@ -1,17 +1,26 @@
 from pathlib import Path
-import json, textwrap, subprocess
+import argparse, json, textwrap, subprocess
 from PIL import Image, ImageDraw, ImageFont
 import imageio_ffmpeg
 root=Path(__file__).resolve().parents[1]
 out=root/'artifacts'/'video'
+parser=argparse.ArgumentParser()
+parser.add_argument('--audio',type=Path)
+parser.add_argument('--durations',type=Path,help='JSON array of seven scene durations in seconds')
+options=parser.parse_args()
 scenes=json.loads((out/'scenes.json').read_text(encoding='utf-8-sig'))
+durations=json.loads(options.durations.read_text()) if options.durations else None
+if options.audio and not durations:
+    parser.error('Narrated rendering requires reviewed scene durations.')
+if durations and (len(durations)!=len(scenes) or any(not isinstance(d,(int,float)) or d<=0 for d in durations)):
+    parser.error('Each scene needs a positive duration.')
 fonts=Path('C:/Windows/Fonts')
 regular=lambda n: ImageFont.truetype(str(fonts/'segoeui.ttf'),n)
 bold=lambda n: ImageFont.truetype(str(fonts/'segoeuib.ttf'),n)
 icon=Image.open(root/'site/assets/icon.png').convert('RGBA').resize((74,74),Image.Resampling.LANCZOS)
 concat=[]; subtitle=[]; elapsed=0.0
 for i,scene in enumerate(scenes):
-    duration=max(3.5,min(7.0,len(scene['text'].split())/2.8+1))
+    duration=durations[i] if durations else max(3.5,min(7.0,len(scene['text'].split())/2.8+1))
     canvas=Image.new('RGBA',(1920,1080),'#F5F7FC'); draw=ImageDraw.Draw(canvas)
     draw.rounded_rectangle((995,-100,2030,1200),radius=110,fill='#E6ECFF')
     canvas.alpha_composite(icon,(70,65))
@@ -38,7 +47,11 @@ concat += [f"file '{(out/f'scene-{len(scenes)-1:02d}.png').as_posix()}'"]
 (out/'frames.txt').write_text('\n'.join(concat)+'\n',encoding='utf-8')
 (out/'hardtop-demo.srt').write_text('\n'.join(subtitle),encoding='utf-8')
 ffmpeg=imageio_ffmpeg.get_ffmpeg_exe()
-video=out/'hardtop-demo-silent.mp4'
-args=[ffmpeg,'-hide_banner','-loglevel','error','-y','-f','concat','-safe','0','-i',str(out/'frames.txt'),'-vf','fps=30,format=yuv420p','-c:v','libx264','-threads','4','-preset','medium','-crf','18','-an','-movflags','+faststart','-shortest',str(video)]
+video=out/('hardtop-demo-narrated.mp4' if options.audio else 'hardtop-demo-silent.mp4')
+args=[ffmpeg,'-hide_banner','-loglevel','error','-y','-f','concat','-safe','0','-i',str(out/'frames.txt')]
+if options.audio: args+=['-i',str(options.audio.resolve())]
+args+=['-vf','fps=30,format=yuv420p','-c:v','libx264','-threads','4','-preset','medium','-crf','18']
+args+=['-c:a','aac','-b:a','128k'] if options.audio else ['-an']
+args+=['-movflags','+faststart','-shortest',str(video)]
 subprocess.run(args,check=True)
-print(json.dumps({'file':str(video),'seconds':elapsed,'bytes':video.stat().st_size,'resolution':'1920x1080','audio':'none; on-screen captions','app_views':'actual WPF controls with sample data'},indent=2))
+print(json.dumps({'file':str(video),'seconds':elapsed,'bytes':video.stat().st_size,'resolution':'1920x1080','audio':str(options.audio) if options.audio else 'none; on-screen captions','app_views':'actual WPF controls with sample data'},indent=2))
