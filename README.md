@@ -6,7 +6,7 @@ Pin the windows you need above the rest. A modern Windows tray companion built w
 
 [![Release](https://img.shields.io/github/v/release/voltura/voltura-hardtop)](https://github.com/voltura/voltura-hardtop/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/voltura/voltura-hardtop/total)](https://github.com/voltura/voltura-hardtop/releases)
-[![MIT](https://img.shields.io/github/license/voltura/voltura-hardtop)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Windows x64](https://img.shields.io/badge/Windows-x64-0078D4)](https://hardtop.voltura.se/#download)
 [![Issues](https://img.shields.io/github/issues/voltura/voltura-hardtop)](https://github.com/voltura/voltura-hardtop/issues)
 
