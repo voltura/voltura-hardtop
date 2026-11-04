@@ -67,15 +67,8 @@ Draw-Label $g 'Pin what matters.' 132 1665 60 ([Drawing.Color]::White)
 Draw-Label $g 'WINDOWS' 132 2175 37 ([Drawing.Color]::FromArgb(210,255,255,255))
 Draw-Label $g 'hardtop.voltura.se' 132 2250 43 ([Drawing.Color]::White)
 $b.Save((Join-Path $installer 'wizard.bmp'),[Drawing.Imaging.ImageFormat]::Bmp);$g.Dispose();$b.Dispose()
-# Light-first social card.
-$pair=New-Canvas 1200 630 $script:Paper;$b=$pair[0];$g=$pair[1]
-Draw-Label $g 'VOLTURA' 66 68 26 $script:Blue $true
-Draw-Label $g 'HardTop' 59 133 100 $script:Ink $true
-Draw-Label $g 'Pin what matters.' 66 282 42 $script:Ink
-Draw-Label $g 'Keep the windows you need above the rest.' 66 352 26 $script:Muted
-Draw-Label $g 'Free for Windows. Open source.' 66 529 25 $script:Muted
-Draw-Icon $g 842 140 292
-$b.Save((Join-Path $site 'social.png'),[Drawing.Imaging.ImageFormat]::Png);$g.Dispose();$b.Dispose()
+# Screenshot-based social card.
+& (Join-Path $PSScriptRoot 'social-preview.ps1')
 if($PreviewPath){
     New-Item -ItemType Directory -Force (Split-Path $PreviewPath -Parent)|Out-Null
     $pair=New-Canvas 1400 950 $script:Paper;$b=$pair[0];$g=$pair[1]

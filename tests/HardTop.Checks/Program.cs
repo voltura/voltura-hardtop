@@ -24,6 +24,7 @@ internal static class Program
     public static int Main(string[] args)
     {
         if (args.Contains("--demo")) { Demo(); return 0; }
+        if (args.Contains("--export-demo")) { DemoExport.Run(); return 0; }
         if (args.Contains("--performance")) { PerformanceChecks.RunAsync().GetAwaiter().GetResult(); return 0; }
         if (args.Contains("--native-performance")) { PerformanceChecks.RunNative(); return 0; }
         if (args.Contains("--tray-performance")) { PerformanceChecks.RunTray(); return 0; }

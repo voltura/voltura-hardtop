@@ -38,6 +38,6 @@ The stopping threshold was elapsed review time, not 200 fixes. There were **31 d
 | 30 | Support heading follows Windows text scaling | Dynamic 45/20 font-size resource check |
 | 31 | Public asset/site verification is automated | All seven existing GitHub and SourceForge 1.0.1 files verified |
 
-Two additional deployment changes are included for verification during 1.0.2 publication: SourceForge's release-only webhook mirror and incremental/no-op Pages publication. The webhook's test delivery returned HTTP 200; read-only site comparison found one changed file and 14 unchanged files. Their new-release publication results are recorded in the validation document after deployment.
+Two additional deployment improvements were verified after the review deadline: SourceForge's release-only webhook mirror copied all seven exact assets, and incremental Pages publication uploaded one changed file while retaining 14; its no-op retry uploaded zero files and created no commit. One further deployment recovery fix adds bounded retries for newly created GitHub draft visibility. These are separate from the 31 changes verified within the hour; see the validation document for publication evidence.
 
 Scope covered application lifetime, native window/tray integration, shortcuts, settings, presentation, update verification/download/cache/handoff, WPF resources, translations, installers, build/sign/package/publication scripts, site and documentation. A time-limited review is not a guarantee that every defect has been found.
