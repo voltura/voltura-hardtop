@@ -2,8 +2,12 @@
 $ErrorActionPreference='Stop'
 $root=Split-Path $PSScriptRoot -Parent
 & (Join-Path $PSScriptRoot 'check-runtime.ps1')
+& (Join-Path $PSScriptRoot 'check-maintenance.ps1')
+& (Join-Path $PSScriptRoot 'check-release.ps1')
 dotnet run --project (Join-Path $root 'tests/HardTop.Checks/HardTop.Checks.csproj') -c Release
 if ($LASTEXITCODE) { throw 'Behavior checks failed.' }
+dotnet run --project (Join-Path $root 'tests/HardTop.Checks/HardTop.Checks.csproj') -c Release --no-build -- --tray-performance
+if ($LASTEXITCODE) { throw 'Tray reuse and appearance checks failed.' }
 dotnet run --project (Join-Path $root 'tests/HardTop.Checks/HardTop.Checks.csproj') -c Release --no-build -- --layout
 if ($LASTEXITCODE) { throw 'Layout checks failed.' }
 $files=Get-ChildItem (Join-Path $root 'src/Voltura.HardTop/Localization/Translations') -Filter '*.json'

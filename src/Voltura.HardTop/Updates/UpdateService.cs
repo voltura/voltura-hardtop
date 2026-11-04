@@ -66,25 +66,9 @@ internal sealed class UpdateService : IAsyncDisposable
             Timeout = TimeSpan.FromMinutes(5),
         };
 
-        using var key = Registry.CurrentUser.OpenSubKey(
-            @"Software\Microsoft\Windows\CurrentVersion\Uninstall\VolturaHardTop"
-        );
-        var location = key?.GetValue("InstallLocation") as string;
-
-        Eligible =
-            eligible
-            ?? (
-                !paths.Portable
-                && !paths.Isolated
-                && location is not null
-                && Path.GetFullPath(location)
-                    .TrimEnd(Path.DirectorySeparatorChar)
-                    .Equals(
-                        AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar),
-                        StringComparison.OrdinalIgnoreCase
-                    )
-            );
-        _lightweight = lightweight ?? (key?.GetValue("PackageVariant") as string == "lite");
+        var registration = ReadInstallation(paths);
+        Eligible = eligible ?? registration.Eligible;
+        _lightweight = lightweight ?? registration.Lightweight;
 
         using var resource = Assembly
             .GetExecutingAssembly()
@@ -105,6 +89,31 @@ internal sealed class UpdateService : IAsyncDisposable
         {
             _state = new(UpdateStatus.ManualUpdates);
         }
+    }
+
+    private static (bool Eligible, bool Lightweight) ReadInstallation(AppPaths paths)
+    {
+        if (paths.Portable || paths.Isolated) return (false, false);
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\VolturaHardTop");
+            return (MatchesInstallationDirectory(key?.GetValue("InstallLocation") as string, AppContext.BaseDirectory), key?.GetValue("PackageVariant") as string == "lite");
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            return (false, false); // Keep the app usable with manual updates under registry policy.
+        }
+    }
+
+    internal static bool MatchesInstallationDirectory(string? location, string executableDirectory)
+    {
+        if (string.IsNullOrWhiteSpace(location) || !Path.IsPathFullyQualified(location)) return false;
+        try
+        {
+            return Path.GetFullPath(location).TrimEnd(Path.DirectorySeparatorChar)
+                .Equals(Path.GetFullPath(executableDirectory).TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception error) when (error is ArgumentException or NotSupportedException or IOException) { return false; }
     }
 
     public void Start(bool automatic)
@@ -308,16 +317,28 @@ internal sealed class UpdateService : IAsyncDisposable
             );
             SetState(UpdateStatus.Ready, installer);
         }
-        catch (OperationCanceledException) { SetState(UpdateStatus.Idle); }
+        catch (OperationCanceledException)
+        {
+            var cached = await RecoverAvailableInstallerAsync();
+            SetState(cached is null ? UpdateStatus.Idle : UpdateStatus.Ready, cached);
+        }
         catch (Exception error) when (IsUpdateError(error))
         {
-            Fail(failure, error);
+            Fail(failure, error, await RecoverAvailableInstallerAsync());
         }
         finally
         {
             _check = null;
             _gate.Release();
         }
+    }
+
+    private async Task<string?> RecoverAvailableInstallerAsync()
+    {
+        if (!Eligible || _stop.IsCancellationRequested)
+            return null;
+        try { return await RecoverPendingAsync(_stop.Token); }
+        catch (OperationCanceledException) when (_stop.IsCancellationRequested) { return null; }
     }
 
     internal async Task RestorePendingAsync()
@@ -410,13 +431,14 @@ internal sealed class UpdateService : IAsyncDisposable
         }
 
         var failure = UpdateStatus.UpdateVerificationFailed;
+        string? installer = null;
 
         try
         {
             await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
             SetState(UpdateStatus.Installing);
 
-            var installer =
+            installer =
                 await ReadPendingAsync(_stop.Token)
                 ?? throw new InvalidDataException(Strings.Current["NoNewerCachedUpdate"]);
 
@@ -433,7 +455,7 @@ internal sealed class UpdateService : IAsyncDisposable
         catch (Exception error)
             when (IsUpdateError(error) || error is System.ComponentModel.Win32Exception)
         {
-            Fail(failure, error);
+            Fail(failure, error, failure == UpdateStatus.UpdateInstallFailed ? installer : null);
 
             return false;
         }
@@ -639,10 +661,10 @@ internal sealed class UpdateService : IAsyncDisposable
                 or OperationCanceledException
                 or ArgumentException;
 
-    private void Fail(UpdateStatus status, Exception error)
+    private void Fail(UpdateStatus status, Exception error, string? installer = null)
     {
         _log?.Record(status.ToString(), error);
-        SetState(status);
+        SetState(status, installer);
     }
 
     private void SetState(UpdateStatus status, string? installer = null)

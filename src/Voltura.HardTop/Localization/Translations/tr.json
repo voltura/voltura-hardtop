@@ -69,7 +69,7 @@
   "PinFailed": "Pencere değiştirilemedi. Kapanmış olabilir veya yönetici erişimi gerektirebilir.",
   "PinChanged": "Pencere güncellendi.",
   "ShortcutConflict": "Kısayol kullanılamıyor. Başka birini seçin; önceki korunur.",
-  "SettingsRecovered": "Ayarlar kurtarıldı. Özgün dosyanın bir kopyası saklandı.",
+  "SettingsRecovered": "Ayarlar kurtarıldı.",
   "SaveFailed": "Ayarlar kaydedilemedi. Klasör izinlerini kontrol edin.",
   "InstallPrompt": "Doğrulanmış güncelleme yüklensin mi? HardTop değişikliklerini geri alıp kapanacak. Kurulum uygulamayı tekrar açabilir.",
   "Apply": "Uygula",

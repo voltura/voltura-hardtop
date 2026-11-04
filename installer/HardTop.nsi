@@ -14,9 +14,12 @@ Unicode true
  !error "OUTPUT required"
 !endif
 !define PRODUCT_KEY "VolturaHardTop"
+!define PRODUCT_NAME "Voltura HardTop"
 !ifdef DEVELOPMENT
  !undef PRODUCT_KEY
  !define PRODUCT_KEY "VolturaHardTopPreview"
+ !undef PRODUCT_NAME
+ !define PRODUCT_NAME "Voltura HardTop Preview"
 !endif
 !define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_KEY}"
 Name "Voltura HardTop"
@@ -151,10 +154,10 @@ Section "Voltura HardTop" MainSection
  WriteRegStr HKCU "${UNINSTALL_KEY}" "HelpLink" "https://github.com/voltura/voltura-hardtop/issues"
  WriteRegDWORD HKCU "${UNINSTALL_KEY}" "NoModify" 1
  WriteRegDWORD HKCU "${UNINSTALL_KEY}" "NoRepair" 1
- CreateShortcut "$SMPROGRAMS\Voltura HardTop.lnk" "$INSTDIR\Voltura.HardTop.exe"
+ CreateShortcut "$SMPROGRAMS\${PRODUCT_NAME}.lnk" "$INSTDIR\Voltura.HardTop.exe"
 SectionEnd
 Section /o "$(StartupLabel)" StartupSection
- WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "VolturaHardTop" '$\"$INSTDIR\Voltura.HardTop.exe$\" --startup'
+ WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "${PRODUCT_KEY}" '$\"$INSTDIR\Voltura.HardTop.exe$\" --startup'
 SectionEnd
 Function un.onInit
  SetRegView 64
@@ -177,8 +180,11 @@ Function un.RemoveChanged
 FunctionEnd
 Section "Uninstall"
  StrCpy $2 ""
+ !ifdef DEVELOPMENT
+ StrCpy $2 '-DataDirectory "$INSTDIR\Data"'
+ !endif
  ${If} $RemoveData == ${BST_CHECKED}
-  StrCpy $2 "-RemoveSettings"
+  StrCpy $2 "$2 -RemoveSettings"
  ${EndIf}
  nsExec::ExecToStack '"$WINDIR\Sysnative\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$PLUGINSDIR\maintenance.ps1" -InstallDirectory "$INSTDIR" $2'
  Pop $0
@@ -191,10 +197,10 @@ Section "Uninstall"
  !include "${REMOVE_FILES}"
  Delete "$INSTDIR\Uninstall.exe"
  RMDir "$INSTDIR"
- Delete "$SMPROGRAMS\Voltura HardTop.lnk"
- ReadRegStr $0 HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "VolturaHardTop"
+ Delete "$SMPROGRAMS\${PRODUCT_NAME}.lnk"
+ ReadRegStr $0 HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "${PRODUCT_KEY}"
  ${If} $0 == '$\"$INSTDIR\Voltura.HardTop.exe$\" --startup'
-  DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "VolturaHardTop"
+  DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "${PRODUCT_KEY}"
  ${EndIf}
  DeleteRegKey HKCU "${UNINSTALL_KEY}"
 SectionEnd

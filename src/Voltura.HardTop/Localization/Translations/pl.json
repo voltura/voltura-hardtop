@@ -69,7 +69,7 @@
   "PinFailed": "Nie można zmienić okna. Mogło zostać zamknięte lub wymaga uprawnień administratora.",
   "PinChanged": "Okno zaktualizowane.",
   "ShortcutConflict": "Skrót niedostępny. Wybierz inny; poprzedni pozostaje bez zmian.",
-  "SettingsRecovered": "Odzyskano ustawienia. Zachowano kopię oryginalnego pliku.",
+  "SettingsRecovered": "Odzyskano ustawienia.",
   "SaveFailed": "Nie można zapisać ustawień. Sprawdź uprawnienia folderu.",
   "InstallPrompt": "Zainstalować zweryfikowaną aktualizację? HardTop cofnie zmiany i zamknie się. Instalator może potem otworzyć aplikację.",
   "Apply": "Zastosuj",

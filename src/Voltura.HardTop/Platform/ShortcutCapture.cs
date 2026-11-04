@@ -11,9 +11,8 @@ internal sealed class ShortcutCapture : IDisposable
     private readonly Action<HotkeyGesture?> completed;
     private readonly nint owner;
     private nint handle;
-    private uint modifiers;
     private bool finishing;
-    private readonly HashSet<uint> held = [];
+    private readonly ShortcutKeyState keys = new();
     private readonly Action<Action> defer;
 
     internal ShortcutCapture(nint owner, Action<HotkeyGesture?> completed, Action<Action> defer)
@@ -25,6 +24,9 @@ internal sealed class ShortcutCapture : IDisposable
         handle = SetWindowsHookEx(13, callback, GetModuleHandle(null), 0);
         if (handle == 0)
             throw new Win32Exception(Marshal.GetLastWin32Error());
+        // A modifier may already be held when the capture button is activated.
+        foreach (var key in new uint[] { 0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0x5B, 0x5C })
+            if ((GetAsyncKeyState((int)key) & 0x8000) != 0) keys.Set(key, true);
     }
 
     private nint OnKeyboard(int code, nint message, nint data)
@@ -33,23 +35,11 @@ internal sealed class ShortcutCapture : IDisposable
             return CallNextHookEx(handle, code, message, data);
         var key = unchecked((uint)Marshal.ReadInt32(data));
         var down = message is 0x100 or 0x104;
-        if (down)
-            held.Add(key);
-        else
-            held.Remove(key);
-        var modifier = key switch
-        {
-            0x10 or 0xA0 or 0xA1 => 4u,
-            0x11 or 0xA2 or 0xA3 => 2u,
-            0x12 or 0xA4 or 0xA5 => 1u,
-            0x5B or 0x5C => 8u,
-            _ => 0u
-        };
-        if (modifier != 0)
-            modifiers = down ? modifiers | modifier : modifiers & ~modifier;
+        keys.Set(key, down);
+        var modifier = ShortcutKeyState.ModifierFor(key);
         if (finishing)
         {
-            if (held.Count == 0)
+            if (!keys.AnyHeld)
                 defer(Dispose);
             return 1;
         }
@@ -61,10 +51,10 @@ internal sealed class ShortcutCapture : IDisposable
             completed(null);
             return 1;
         }
-        if (modifiers == 0)
+        if (keys.Modifiers == 0)
             return 1;
         finishing = true;
-        completed(new HotkeyGesture(modifiers, key));
+        completed(new HotkeyGesture(keys.Modifiers, key));
         return 1;
     }
     public void Dispose()
@@ -79,5 +69,6 @@ internal sealed class ShortcutCapture : IDisposable
     [DllImport("user32.dll")] private static extern bool UnhookWindowsHookEx(nint hook);
     [DllImport("user32.dll")] private static extern nint CallNextHookEx(nint hook, int code, nint message, nint data);
     [DllImport("user32.dll")] private static extern nint GetForegroundWindow();
+    [DllImport("user32.dll")] private static extern short GetAsyncKeyState(int key);
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern nint GetModuleHandle(string? name);
 }

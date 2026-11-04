@@ -69,7 +69,7 @@
   "PinFailed": "Could not change this window. It may have closed or require administrator access.",
   "PinChanged": "Window updated.",
   "ShortcutConflict": "Shortcut unavailable. Choose another combination; the previous shortcut is unchanged.",
-  "SettingsRecovered": "Settings were recovered. A copy of the original file was kept.",
+  "SettingsRecovered": "Settings were recovered.",
   "SaveFailed": "Could not save settings. Check folder permissions.",
   "InstallPrompt": "Install the verified update? HardTop will restore its pin changes and close. Setup can reopen it when finished.",
   "Apply": "Apply",

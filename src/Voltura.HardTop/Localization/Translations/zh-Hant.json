@@ -69,7 +69,7 @@
   "PinFailed": "無法變更此視窗。它可能已關閉或需要系統管理員權限。",
   "PinChanged": "視窗已更新。",
   "ShortcutConflict": "快速鍵無法使用。請選擇其他組合；原快速鍵維持不變。",
-  "SettingsRecovered": "設定已復原，原始檔案的副本已保留。",
+  "SettingsRecovered": "設定已復原。",
   "SaveFailed": "無法儲存設定。請檢查資料夾權限。",
   "InstallPrompt": "安裝已驗證的更新？HardTop 將還原置頂變更並結束。安裝完成後可以重新開啟。",
   "Apply": "套用",

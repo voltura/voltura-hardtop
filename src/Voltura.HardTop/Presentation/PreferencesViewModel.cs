@@ -7,6 +7,7 @@ public enum PreferenceChange
 {
     Language = 1, Appearance = 2, Opacity = 4, Updates = 8
 }
+public enum ShortcutApplyResult { Applied, RegistrationFailed, SaveFailed }
 
 public sealed class PreferencesViewModel(
     SettingsStore store,
@@ -15,11 +16,26 @@ public sealed class PreferencesViewModel(
     Action openPicker,
     Action toggleForeground)
 {
+    private bool startupUnavailable;
     public event Action<PreferenceChange>? Changed;
     public event Action<string>? Feedback;
     public Preferences Value => store.Value;
-    public bool StartupAvailable => !store.Portable;
-    public bool StartWithWindows => startup.Enabled;
+    public bool HasUnsavedChanges { get; private set; }
+    public bool StartupAvailable => !store.Portable && !startupUnavailable;
+    public bool StartWithWindows
+    {
+        get
+        {
+            if (!StartupAvailable) return false;
+            try { return startup.Enabled; }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+            {
+                startupUnavailable = true;
+                Feedback?.Invoke("ActionFailed");
+                return false;
+            }
+        }
+    }
 
     public void SetLanguage(string language)
     {
@@ -65,14 +81,14 @@ public sealed class PreferencesViewModel(
         }
     }
 
-    public bool ApplyPickerShortcut(string text) => ApplyShortcut("picker", text, openPicker);
-    public bool ApplyToggleShortcut(string text) => ApplyShortcut("toggle", text, toggleForeground);
+    public ShortcutApplyResult ApplyPickerShortcut(string text) => ApplyShortcut("picker", text, openPicker);
+    public ShortcutApplyResult ApplyToggleShortcut(string text) => ApplyShortcut("toggle", text, toggleForeground);
 
-    private bool ApplyShortcut(string slot, string text, Action action)
+    private ShortcutApplyResult ApplyShortcut(string slot, string text, Action action)
     {
         if (!hotkeys.Replace(slot, text, action))
         {
-            return false;
+            return ShortcutApplyResult.RegistrationFailed;
         }
 
         if (slot == "picker")
@@ -80,7 +96,7 @@ public sealed class PreferencesViewModel(
         else
             Value.ToggleShortcut = text.Trim();
 
-        return Save();
+        return Save() ? ShortcutApplyResult.Applied : ShortcutApplyResult.SaveFailed;
     }
 
     public void CompleteIntroduction()
@@ -94,10 +110,12 @@ public sealed class PreferencesViewModel(
         try
         {
             store.Save();
+            HasUnsavedChanges = false;
             return true;
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
+            HasUnsavedChanges = true;
             Feedback?.Invoke("SaveFailed");
             return false;
         }

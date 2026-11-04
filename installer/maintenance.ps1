@@ -1,4 +1,4 @@
-param([Parameter(Mandatory)][string]$InstallDirectory,[switch]$RemoveSettings)
+param([Parameter(Mandatory)][string]$InstallDirectory,[switch]$RemoveSettings,[string]$DataDirectory)
 $ErrorActionPreference='Stop'
 $expected=[IO.Path]::GetFullPath((Join-Path $InstallDirectory 'Voltura.HardTop.exe'))
 $sid=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value
@@ -10,10 +10,10 @@ foreach($process in Get-Process -Name Voltura.HardTop -ErrorAction SilentlyConti
     }
 }
 if($RemoveSettings){
-    $data=Join-Path $env:LOCALAPPDATA 'Voltura/HardTop'
+    $data=if($DataDirectory){$DataDirectory}else{Join-Path $env:LOCALAPPDATA 'Voltura/HardTop'}
     # Deliberately preserve Signing/ and its private keys. Delete only app-owned data files.
     foreach($file in @('settings.json','settings.json.pending')){Remove-Item -LiteralPath (Join-Path $data $file) -Force -ErrorAction SilentlyContinue}
     Get-ChildItem -LiteralPath $data -Filter 'settings.json.recovered-*' -File -ErrorAction SilentlyContinue | Remove-Item -Force
     $updates=Join-Path $data 'Updates/pending'
-    if(Test-Path -LiteralPath $updates){Get-ChildItem -LiteralPath $updates -File | Where-Object {$_.Name -match '^(VolturaHardTop-Setup-[0-9.]+-win-x64\.exe|manifest\.(json|pending)|signature\.sig|installer\.pending)$'} | Remove-Item -Force}
+    if(Test-Path -LiteralPath $updates){Get-ChildItem -LiteralPath $updates -File | Where-Object {$_.Name -match '^(VolturaHardTop-Setup-[0-9.]+-win-x64(-lite)?\.exe|manifest\.(json|pending)|signature\.sig|installer\.pending)$'} | Remove-Item -Force}
 }

@@ -69,7 +69,7 @@
   "PinFailed": "Kan dit venster niet wijzigen. Het is mogelijk gesloten of vereist beheerdersrechten.",
   "PinChanged": "Venster bijgewerkt.",
   "ShortcutConflict": "Sneltoets niet beschikbaar. Kies een andere; de vorige blijft behouden.",
-  "SettingsRecovered": "Instellingen hersteld. Een kopie van het oorspronkelijke bestand is bewaard.",
+  "SettingsRecovered": "Instellingen hersteld.",
   "SaveFailed": "Kan instellingen niet opslaan. Controleer de mapmachtigingen.",
   "InstallPrompt": "Geverifieerde update installeren? HardTop herstelt de wijzigingen en sluit af. Setup kan de app daarna openen.",
   "Apply": "Toepassen",

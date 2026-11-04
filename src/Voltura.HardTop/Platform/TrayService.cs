@@ -11,11 +11,12 @@ internal sealed class TrayService : IDisposable
     private readonly TrayIconVisibilityPromoter promoter;
     private readonly TrayActions actions;
     private bool disposed;
+    private (bool Dark, string Language, bool HighContrast)? renderedAppearance;
 
     internal TrayService(Dispatcher dispatcher, TrayActions actions)
     {
         this.actions = actions;
-        using var stream = Application.GetResourceStream(new Uri("pack://application:,,,/Assets/App.ico")).Stream;
+        using var stream = Application.GetResourceStream(new Uri("pack://application:,,,/Voltura.HardTop;component/Assets/App.ico")).Stream;
         icon = new()
         {
             Icon = new System.Drawing.Icon(stream),
@@ -31,9 +32,12 @@ internal sealed class TrayService : IDisposable
         promoter.Start();
     }
 
-    internal void Rebuild(bool dark, bool updateReady)
+    internal void Rebuild(bool dark, bool updateReady, bool force = false)
     {
         if (disposed)
+            return;
+        var appearance = (dark, Strings.Current.LanguageId, System.Windows.Forms.SystemInformation.HighContrast);
+        if (!force && renderedAppearance == appearance)
             return;
         var renderer = new TrayMenuRenderer(dark);
         var menu = new System.Windows.Forms.ContextMenuStrip
@@ -59,6 +63,7 @@ internal sealed class TrayService : IDisposable
 
         var previous = icon.ContextMenuStrip;
         icon.ContextMenuStrip = menu;
+        renderedAppearance = appearance;
         previous?.Dispose();
     }
 

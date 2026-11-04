@@ -19,7 +19,7 @@ internal enum UpdateStatus
 // Publish the message and available action together, never as independent mutable fields.
 internal sealed record UpdateState(UpdateStatus Status, string? Installer = null)
 {
-    public bool Ready => Status == UpdateStatus.Ready && Installer is not null;
+    public bool Ready => Installer is not null && !Busy;
     public bool Busy =>
         Status is UpdateStatus.Checking or UpdateStatus.Downloading or UpdateStatus.Installing;
 }

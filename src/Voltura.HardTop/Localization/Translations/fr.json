@@ -69,7 +69,7 @@
   "PinFailed": "Impossible de modifier cette fenêtre. Elle est peut-être fermée ou nécessite des droits administrateur.",
   "PinChanged": "Fenêtre mise à jour.",
   "ShortcutConflict": "Raccourci indisponible. Choisissez une autre combinaison ; le précédent reste inchangé.",
-  "SettingsRecovered": "Paramètres récupérés. Une copie du fichier original a été conservée.",
+  "SettingsRecovered": "Paramètres récupérés.",
   "SaveFailed": "Impossible d’enregistrer les paramètres. Vérifiez les droits du dossier.",
   "InstallPrompt": "Installer la mise à jour vérifiée ? HardTop annulera ses modifications et se fermera. L’installation pourra le rouvrir ensuite.",
   "Apply": "Appliquer",

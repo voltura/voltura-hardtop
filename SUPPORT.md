@@ -4,7 +4,7 @@ Use [GitHub issues](https://github.com/voltura/voltura-hardtop/issues) for quest
 
 - Shortcut unavailable: choose another combination, or exit the original HardTop if it holds Ctrl+Alt+Z.
 - Window cannot be pinned: it may have closed or require permissions unavailable to HardTop.
-- App still running: closing the picker hides it. Choose Exit in the tray menu or Preferences.
+- App still running: closing the picker hides it. Choose Exit in the tray menu.
 - Settings cannot be saved: check access to `%LOCALAPPDATA%\Voltura\HardTop`, or the portable `Data` folder.
 - Update failed: retry in Preferences or install the current release manually. Failed verification never starts Setup.
 

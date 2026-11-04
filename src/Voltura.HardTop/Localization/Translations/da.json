@@ -69,7 +69,7 @@
   "PinFailed": "Vinduet kunne ikke ændres. Det kan være lukket eller kræve administratoradgang.",
   "PinChanged": "Vindue opdateret.",
   "ShortcutConflict": "Genvejen er optaget. Vælg en anden kombination; den tidligere bevares.",
-  "SettingsRecovered": "Indstillinger gendannet. En kopi af originalfilen blev gemt.",
+  "SettingsRecovered": "Indstillinger gendannet.",
   "SaveFailed": "Indstillinger kunne ikke gemmes. Kontrollér mappens tilladelser.",
   "InstallPrompt": "Installér den bekræftede opdatering? HardTop gendanner sine ændringer og lukker. Installationen kan åbne appen igen.",
   "Apply": "Anvend",

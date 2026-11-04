@@ -69,7 +69,7 @@
   "PinFailed": "无法更改此窗口。它可能已关闭或需要管理员权限。",
   "PinChanged": "窗口已更新。",
   "ShortcutConflict": "快捷键不可用。请选择其他组合；原快捷键保持不变。",
-  "SettingsRecovered": "设置已恢复，原文件副本已保留。",
+  "SettingsRecovered": "设置已恢复。",
   "SaveFailed": "无法保存设置。请检查文件夹权限。",
   "InstallPrompt": "安装已验证的更新？HardTop 将还原置顶更改并退出。安装完成后可以重新打开。",
   "Apply": "应用",

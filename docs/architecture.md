@@ -14,4 +14,6 @@ The application uses .NET 10 WPF with a small Windows Forms notification-area in
 
 All UI state is accessed on the WPF dispatcher. Window enumeration and downloads run asynchronously. Surviving windows retain their list order across refreshes, and the view preserves its scroll offset. Search-derived counts are independent of the selected filter. Manual packages can check release metadata but never download or stage installers. Native resources and event subscriptions have explicit lifetime owners. Tests use fake OS boundaries for policy checks and real Win32 windows for interop checks; no production test switches are shipped.
 
+Picker refreshes share their in-flight scan; pin actions request a subsequent scan when the previous snapshot predates the action. Ordering uses dictionary lookups, unchanged rows and frozen icon snapshots are reused, and polling stops while minimized or showing Preferences. Tray menus are rebuilt when language/appearance changes, not for every download-progress event. Failed/cancelled update rechecks reverify any remaining cached package before retaining its install action.
+
 Release building, native metadata, signing, packaging and publishing are separate local scripts. The product website is independent static source under `site`; it never shares the README as its page content.

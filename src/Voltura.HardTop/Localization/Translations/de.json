@@ -69,7 +69,7 @@
   "PinFailed": "Das Fenster konnte nicht geändert werden. Es wurde möglicherweise geschlossen oder benötigt Administratorrechte.",
   "PinChanged": "Fenster aktualisiert.",
   "ShortcutConflict": "Tastenkombination nicht verfügbar. Wählen Sie eine andere; die bisherige bleibt erhalten.",
-  "SettingsRecovered": "Einstellungen wiederhergestellt. Eine Kopie der Originaldatei wurde behalten.",
+  "SettingsRecovered": "Einstellungen wiederhergestellt.",
   "SaveFailed": "Einstellungen konnten nicht gespeichert werden. Prüfen Sie die Ordnerberechtigungen.",
   "InstallPrompt": "Geprüftes Update installieren? HardTop stellt seine Änderungen wieder her und wird geschlossen. Setup kann die App danach öffnen.",
   "Apply": "Anwenden",

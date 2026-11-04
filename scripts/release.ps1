@@ -3,6 +3,7 @@ param([switch]$Publish,[string]$OutputDirectory)
 $ErrorActionPreference='Stop'
 $root=Split-Path $PSScriptRoot -Parent
 $repository='voltura/voltura-hardtop'
+. (Join-Path $PSScriptRoot 'release-files.ps1')
 $version=([xml](Get-Content (Join-Path $root 'Directory.Build.props'))).Project.PropertyGroup.Version
 if(!$OutputDirectory){$OutputDirectory=Join-Path $root "artifacts/releases/$version"}
 $tag="v$version"
@@ -13,6 +14,8 @@ function InvokeGit([string[]]$Arguments){$result=& git -C $root @Arguments;if($L
 function InvokeGh([string[]]$Arguments){$result=& $githubCli @Arguments;if($LASTEXITCODE){throw "GitHub failed: $($Arguments -join ' ')"};return $result}
 if(InvokeGit -Arguments @('status','--porcelain')){throw 'Commit the reviewed source before release preparation.'}
 $head=InvokeGit -Arguments @('rev-parse','HEAD')
+$notes=Join-Path $root "docs/release-$version.md"
+if(!(Test-Path $notes)){throw 'Reviewed release notes are required before building release assets.'}
 if($Publish){
     InvokeGit -Arguments @('fetch','origin','main')|Out-Null
     if((InvokeGit -Arguments @('rev-parse','origin/main')) -ne $head){throw 'Local main must match origin/main.'}
@@ -25,15 +28,10 @@ if(!(Test-Path $reportPath)){
     & (Join-Path $PSScriptRoot 'build.ps1') -FrameworkDependent
     & (Join-Path $PSScriptRoot 'package.ps1') -SkipBuild -OutputDirectory $OutputDirectory
 }
-$report=Get-Content $reportPath -Raw|ConvertFrom-Json
+$verified=Get-VerifiedRelease -ReleaseDirectory $OutputDirectory -PublicKeyPath (Join-Path $root 'src/Voltura.HardTop/Updates/public.pem')
+$report=$verified.Report
 if($report.development -or $report.sourceCommit -ne $head -or $report.version -ne $version){throw 'Prepared assets do not match this clean release commit.'}
-foreach($asset in $report.assets){
-    $path=Join-Path $OutputDirectory $asset.name
-    if(!(Test-Path $path) -or (Get-Item $path).Length -ne $asset.size -or (Get-FileHash $path -Algorithm SHA256).Hash -ine $asset.sha256){throw "Prepared asset changed: $($asset.name)"}
-}
 if(!$Publish){Write-Host "Prepared release $tag. Add -Publish to publish these exact bytes.";return}
-$notes=Join-Path $root "docs/release-$version.md"
-if(!(Test-Path $notes)){throw 'Reviewed release notes are required.'}
 $remoteTags=InvokeGit -Arguments @('ls-remote','--tags','origin',"refs/tags/$tag")
 if($remoteTags -and $remoteTags.Split()[0] -ne $head){throw 'Remote tag already points to different source.'}
 $source=Join-Path $OutputDirectory "VolturaHardTop-Source-$version.zip"
@@ -45,7 +43,7 @@ $release=@(InvokeGh -Arguments @('api',"repos/$repository/releases?per_page=100"
 if(!$release){throw 'Release draft was not created.'}
 if($release.draft -and $release.target_commitish -ne $head){InvokeGh -Arguments @('release','edit',$tag,'--repo',$repository,'--target',$head,'--notes-file',$notes)|Out-Null}
 $release=InvokeGh -Arguments @('api',"repos/$repository/releases/$($release.id)")|ConvertFrom-Json
-$paths=@($report.assets|ForEach-Object {Join-Path $OutputDirectory $_.name})+@($reportPath)
+$paths=$verified.Paths
 foreach($path in $paths){
     $name=Split-Path $path -Leaf
     $published=@($release.assets|Where-Object name -eq $name)

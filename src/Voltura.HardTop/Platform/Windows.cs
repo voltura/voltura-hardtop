@@ -12,6 +12,8 @@ namespace Voltura.HardTop.Platform;
 public sealed class Windows : IWindows, IWindowSource
 {
     private readonly Dictionary<(uint Pid, long Started), string> applicationNames = [];
+    private readonly WindowIconCache icons = new(handle =>
+        Imaging.CreateBitmapSourceFromHIcon(handle, System.Windows.Int32Rect.Empty, BitmapSizeOptions.FromWidthAndHeight(32, 32)));
 
     private string ApplicationName(Process process, WindowIdentity identity)
     {
@@ -50,7 +52,10 @@ public sealed class Windows : IWindows, IWindowSource
         var result = new List<DesktopWindow>();
         EnumWindows((handle, _) =>
         {
-            if (!IsWindowVisible(handle) || GetWindow(handle, 4) != 0 || (GetWindowLongPtr(handle, -20).ToInt64() & 0x80) != 0)
+            if (!IsWindowVisible(handle) || GetWindow(handle, 4) != 0)
+                return true;
+            var extendedStyle = GetWindowLongPtr(handle, -20).ToInt64();
+            if ((extendedStyle & 0x80) != 0)
                 return true;
             var title = new StringBuilder(2048);
             GetWindowText(handle, title, title.Capacity);
@@ -58,32 +63,26 @@ public sealed class Windows : IWindows, IWindowSource
                 return true;
             if (DwmGetWindowAttribute(handle, 14, out var cloaked, sizeof(int)) == 0 && cloaked != 0)
                 return true;
-            var identity = Identify(handle);
-            if (identity is not { } id || id.ProcessId == Environment.ProcessId)
+            GetWindowThreadProcessId(handle, out var pid);
+            if (pid == 0 || pid == Environment.ProcessId)
                 return true;
             try
             {
-                using var process = Process.GetProcessById((int)id.ProcessId);
-                ImageSource? icon = null;
+                using var process = Process.GetProcessById((int)pid);
+                var id = new WindowIdentity(handle, pid, process.StartTime.ToUniversalTime().Ticks);
                 // Class icon lookup never sends synchronous messages to another application.
                 var iconHandle = GetClassLongPtr(handle, -14);
                 if (iconHandle == 0)
                     iconHandle = GetClassLongPtr(handle, -34);
-                if (iconHandle != 0)
-                {
-                    try
-                    {
-                        var image = Imaging.CreateBitmapSourceFromHIcon(iconHandle, System.Windows.Int32Rect.Empty, BitmapSizeOptions.FromWidthAndHeight(32, 32));
-                        image.Freeze();
-                        icon = image;
-                    }
-                    catch (ArgumentException) { }
-                }
-                result.Add(new(id, title.ToString(), ApplicationName(process, id), IsTopmost(id), icon));
+                var icon = icons.Get(id, iconHandle);
+                // Enumeration is a snapshot. Mutating operations still revalidate identity;
+                // avoid reopening the same process twice merely to read its captured style.
+                result.Add(new(id, title.ToString(), ApplicationName(process, id), (extendedStyle & 8) != 0, icon));
             }
             catch (Exception e) when (e is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception) { }
             return true;
         }, 0);
+        icons.Retain(result.Select(window => window.Identity).ToHashSet());
         var active = result.Select(window => (window.Identity.ProcessId, window.Identity.ProcessStarted)).ToHashSet();
         foreach (var key in applicationNames.Keys.Where(key => !active.Contains(key)).ToArray())
             applicationNames.Remove(key);

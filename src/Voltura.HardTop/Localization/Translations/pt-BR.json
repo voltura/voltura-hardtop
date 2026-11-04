@@ -69,7 +69,7 @@
   "PinFailed": "Não foi possível alterar a janela. Ela pode estar fechada ou exigir acesso de administrador.",
   "PinChanged": "Janela atualizada.",
   "ShortcutConflict": "Atalho indisponível. Escolha outra combinação; o anterior permanece.",
-  "SettingsRecovered": "Configurações recuperadas. Uma cópia do arquivo original foi preservada.",
+  "SettingsRecovered": "Configurações recuperadas.",
   "SaveFailed": "Não foi possível salvar as configurações. Verifique as permissões da pasta.",
   "InstallPrompt": "Instalar a atualização verificada? O HardTop restaurará suas alterações e fechará. O instalador poderá abri-lo novamente.",
   "Apply": "Aplicar",

@@ -69,7 +69,7 @@
   "PinFailed": "Kunne ikke endre vinduet. Det kan være lukket eller kreve administratortilgang.",
   "PinChanged": "Vindu oppdatert.",
   "ShortcutConflict": "Hurtigtasten er opptatt. Velg en annen; den forrige beholdes.",
-  "SettingsRecovered": "Innstillinger gjenopprettet. En kopi av originalfilen ble beholdt.",
+  "SettingsRecovered": "Innstillinger gjenopprettet.",
   "SaveFailed": "Kunne ikke lagre innstillinger. Sjekk mappetillatelsene.",
   "InstallPrompt": "Installere den bekreftede oppdateringen? HardTop tilbakestiller endringene og lukkes. Installasjonen kan åpne appen igjen.",
   "Apply": "Bruk",

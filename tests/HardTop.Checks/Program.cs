@@ -24,6 +24,10 @@ internal static class Program
     public static int Main(string[] args)
     {
         if (args.Contains("--demo")) { Demo(); return 0; }
+        if (args.Contains("--performance")) { PerformanceChecks.RunAsync().GetAwaiter().GetResult(); return 0; }
+        if (args.Contains("--native-performance")) { PerformanceChecks.RunNative(); return 0; }
+        if (args.Contains("--tray-performance")) { PerformanceChecks.RunTray(); return 0; }
+        if (args.Contains("--settings-performance")) { PerformanceChecks.RunSettingsRecovery(); return 0; }
         if (args.Contains("--layout")) { try { LayoutChecks.Run(); return 0; } catch (Exception e) { Console.Error.WriteLine(e); return 1; } }
         try { Run().GetAwaiter().GetResult(); Console.WriteLine($"Passed {checks} checks."); return 0; }
         catch (Exception error) { Console.Error.WriteLine(error); return 1; }
@@ -31,6 +35,17 @@ internal static class Program
     private static async Task Run()
     {
         Assert(HotkeyGesture.TryParse("Ctrl+Alt+T", out _) && !HotkeyGesture.TryParse("T", out _) && !HotkeyGesture.TryParse("Ctrl+Ctrl+T", out _), "Shortcut parsing rejects unsafe or duplicate modifiers");
+        Assert(UpdateService.MatchesInstallationDirectory(AppContext.BaseDirectory.ToUpperInvariant(),AppContext.BaseDirectory)
+            && !UpdateService.MatchesInstallationDirectory("relative-path",AppContext.BaseDirectory)
+            && !UpdateService.MatchesInstallationDirectory("C:\\invalid\0location",AppContext.BaseDirectory)
+            && !UpdateService.MatchesInstallationDirectory(null,AppContext.BaseDirectory), "Corrupt or relative update registration falls back safely to manual updates");
+        var heldKeys = new ShortcutKeyState();
+        heldKeys.Set(0xA2, true); heldKeys.Set(0xA3, true); heldKeys.Set(0xA2, false);
+        Assert(heldKeys.Modifiers == 2, "Releasing one Ctrl key preserves the other held Ctrl key");
+        heldKeys.Set(0xA4, true); heldKeys.Set(0x54, true); heldKeys.Set(0x54, false);
+        Assert(heldKeys.Modifiers == 3 && heldKeys.AnyHeld, "Capture retains modifier state until all physical keys are released");
+        heldKeys.Set(0xA3, false); heldKeys.Set(0xA4, false);
+        Assert(heldKeys.Modifiers == 0 && !heldKeys.AnyHeld, "Releasing all captured keys clears the modifier state");
         using (var first = new Hotkeys())
         using (var competing = new Hotkeys())
         {
@@ -50,6 +65,15 @@ internal static class Program
         fake.Current = false; Assert(!session.Toggle(id), "Stale identity rejected");
         fake.Current = true; fake.Topmost = false; fake.Allowed = false; Assert(!session.Toggle(id), "Permission failure is reported");
         fake.Allowed = true; session.Toggle(id); fake.Current = false; fake.Topmost = false; session.Restore(); Assert(!fake.Topmost, "Reused handle is not restored into another process");
+        fake.Current = true; session.Toggle(id); fake.Allowed = false;
+        Assert(session.Restore() == 1 && fake.Topmost, "Failed pin restoration reports failure");
+        fake.Allowed = true;
+        Assert(session.Restore() == 0 && !fake.Topmost, "Failed pin restoration can be retried");
+        session.Toggle(id); fake.IgnoreChanges = true;
+        Assert(session.Restore() == 1 && fake.Topmost, "A successful native call without a state change is a restore failure");
+        fake.IgnoreChanges = false; session.Restore();
+        session.Toggle(id); fake.Topmost = false;
+        Assert(session.Restore() == 0 && !fake.Topmost, "External topmost changes are preserved during restoration");
         var native = new NativeWindows();
         var testWindow = new Window { Title = "HardTop verification window", Width = 250, Height = 150, ShowInTaskbar = false, WindowStyle = WindowStyle.None, AllowsTransparency = true };
         var handle = new WindowInteropHelper(testWindow).EnsureHandle();
@@ -68,6 +92,18 @@ internal static class Program
         Assert(new SettingsStore(dir).Value.Language == "sv", "Atomic settings round trip");
         File.WriteAllText(Path.Combine(dir, "settings.json"), "broken");
         Assert(new SettingsStore(dir).Recovered && Directory.GetFiles(dir, "*.recovered-*").Length == 1, "Damaged settings recovered with original copy");
+        // A backup destination that is a directory produces access denied on Windows.
+        // Keep all fixtures in our temporary directory, without changing any ACLs.
+        var blockedBackup = Path.Combine(dir, "blocked-backup");
+        Directory.CreateDirectory(blockedBackup);
+        File.WriteAllText(Path.Combine(blockedBackup, "settings.json"), "broken");
+        var backupTime = DateTime.UtcNow;
+        for (var second = -2; second <= 30; second++)
+            Directory.CreateDirectory(Path.Combine(blockedBackup, "settings.json.recovered-" + backupTime.AddSeconds(second).ToString("yyyyMMddHHmmss")));
+        Assert(new SettingsStore(blockedBackup).Recovered, "Settings recover even when the backup cannot be written");
+        File.WriteAllText(Path.Combine(dir, "settings.json"), "{\"Language\":\"unsupported\",\"Theme\":\"invalid\",\"OpacityPercent\":999,\"PickerShortcut\":null}");
+        var normalized = new SettingsStore(dir).Value;
+        Assert(normalized.Language == "system" && normalized.Theme == "system" && normalized.OpacityPercent == 100 && normalized.PickerShortcut == "Ctrl+Alt+Z", "Invalid saved preferences normalize to supported values");
         var model = new WindowPickerViewModel(new SampleWindows(), new PinSession(new FakeWindows()));
         await model.RefreshAsync();
         Assert(model.Rows.Count == 3, "Picker retains duplicate titles as distinct windows");
@@ -81,6 +117,43 @@ internal static class Program
         Strings.Current.SetLanguage("sv"); model.RefreshLabels();
         Assert(model.Rows.Any(row => row.ActionLabel == "Fäst"), "Existing picker rows relocalize immediately");
         Strings.Current.SetLanguage("en");
+        var iconLoads = 0;
+        var iconCache = new WindowIconCache(_ => { iconLoads++; return new DrawingImage(); });
+        var iconIdentity = new WindowIdentity(9, 9, 9);
+        var cachedIcon = iconCache.Get(iconIdentity, 10);
+        for (var repeat = 0; repeat < 1000; repeat++)
+            AssertSameIcon(iconCache.Get(iconIdentity, 10), cachedIcon);
+        Assert(iconLoads == 1 && cachedIcon!.IsFrozen, "Unchanged icon uses one frozen snapshot across 1000 refreshes");
+        Assert(!ReferenceEquals(iconCache.Get(iconIdentity, 11), cachedIcon) && iconLoads == 2, "Changed native icon invalidates its cached snapshot");
+        iconCache.Retain(new HashSet<WindowIdentity>());
+        iconCache.Get(iconIdentity, 11);
+        Assert(iconLoads == 3, "Closed window icon is evicted from the cache");
+        Assert(iconCache.Get(iconIdentity, 0) is null, "Removed native icon clears the cached image");
+        var delayed = new DelayedWindows();
+        var delayedPicker = new WindowPickerViewModel(delayed, new PinSession(delayed));
+        var inProgress = delayedPicker.RefreshAsync();
+        await delayed.Started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        var pinDuringRefresh = delayedPicker.ToggleAsync(delayed.Identity);
+        Assert(!pinDuringRefresh.IsCompleted, "Pin action waits for an overlapping refresh");
+        delayed.Release.Set();
+        await inProgress;
+        Assert(await pinDuringRefresh && delayedPicker.Rows.Single().Window.Pinned, "Pin action refreshes after the older enumeration snapshot completes");
+        var mutableSource = new MutableSource
+        {
+            Snapshot = [new(new(11, 1, 1), "First", "Fixture", false), new(new(22, 1, 1), "Second", "Fixture", true)],
+        };
+        var stablePicker = new WindowPickerViewModel(mutableSource, new PinSession(new FakeWindows()));
+        await stablePicker.RefreshAsync();
+        var stableSecond = stablePicker.Rows[1];
+        var changedIcon = new DrawingImage(); changedIcon.Freeze();
+        mutableSource.Snapshot = [mutableSource.Snapshot[1], mutableSource.Snapshot[0] with { Title = "Renamed", Icon = changedIcon }, new(new(33, 1, 1), "New", "Fixture", false)];
+        await stablePicker.RefreshAsync();
+        Assert(stablePicker.Rows.Select(row => row.Window.Identity.Handle).SequenceEqual(new nint[] { 11, 22, 33 }), "Refresh preserves surviving order and appends new windows");
+        Assert(ReferenceEquals(stableSecond, stablePicker.Rows[1]), "Unchanged picker rows reuse their existing presentation objects");
+        var replacementIcon = new DrawingImage(); replacementIcon.Freeze();
+        mutableSource.Snapshot = mutableSource.Snapshot.Select(window => window.Identity.Handle == 11 ? window with { Icon = replacementIcon } : window).ToArray();
+        await stablePicker.RefreshAsync();
+        Assert(ReferenceEquals(stablePicker.Rows[0].Window.Icon, replacementIcon), "Icon-only window changes reach the picker");
         var registrar = new MemoryHotkeys(); var startup = new MemoryStartup();
         var preferences = new PreferencesViewModel(store, startup, registrar, () => { }, () => { });
         var previousShortcut = store.Value.PickerShortcut;
@@ -91,6 +164,17 @@ internal static class Program
         preferences.SetOpacity(12);
         Assert(store.Value.OpacityPercent == 60 && new SettingsStore(dir).Value.OpacityPercent == 60, "Opacity is bounded and persisted by presentation model");
         preferences.SetStartup(true); Assert(startup.Enabled, "Startup preference uses its dedicated OS service");
+        var restrictedPreferences = new PreferencesViewModel(store, new RestrictedStartup(), registrar, () => { }, () => { });
+        Assert(!restrictedPreferences.StartWithWindows && !restrictedPreferences.StartupAvailable, "Unreadable startup registration disables the setting without crashing preferences");
+        var failedSaveStore = new SettingsStore(Path.Combine(dir, "write-failure"));
+        var blockedPending = Path.Combine(failedSaveStore.DirectoryPath, "settings.json.pending");
+        Directory.CreateDirectory(blockedPending);
+        var failedSavePreferences = new PreferencesViewModel(failedSaveStore, startup, registrar, () => { }, () => { });
+        Assert(failedSavePreferences.ApplyPickerShortcut("Ctrl+Shift+F11") == ShortcutApplyResult.SaveFailed && failedSavePreferences.HasUnsavedChanges,
+            "Shortcut save failure is distinct from a registration conflict and remains retryable");
+        Directory.Delete(blockedPending);
+        Assert(failedSavePreferences.ApplyPickerShortcut("Ctrl+Shift+F11") == ShortcutApplyResult.Applied && !failedSavePreferences.HasUnsavedChanges
+            && new SettingsStore(failedSaveStore.DirectoryPath).Value.PickerShortcut == "Ctrl+Shift+F11", "Shortcut persistence can be retried after storage access recovers");
         var english = LanguageCatalog.Load("en");
         foreach (var language in LanguageCatalog.All)
         {
@@ -134,6 +218,7 @@ internal static class Program
         var metadata = JsonSerializer.SerializeToUtf8Bytes(new { tag_name = "v1.0.0", draft = false, prerelease = false, assets = new[] { asset.name, "VolturaHardTop-Update-1.0.0.json", "VolturaHardTop-Update-1.0.0.sig" }.Select(name => new { name, browser_download_url = "https://github.com/voltura/voltura-hardtop/releases/download/v1.0.0/" + name }) });
         var files = new Dictionary<string, byte[]> { ["latest"] = metadata, [asset.name] = bytes, ["VolturaHardTop-Update-1.0.0.json"] = manifest, ["VolturaHardTop-Update-1.0.0.sig"] = signature };
         var installed = false;
+        var rejectInstallation = true;
         var liteMetadata = JsonSerializer.SerializeToUtf8Bytes(new { tag_name = "v1.0.0", draft = false, prerelease = false, assets = new[] { asset.name, liteAsset.name, "VolturaHardTop-Update-1.0.0.json", "VolturaHardTop-Update-1.0.0.sig" }.Select(name => new { name, browser_download_url = "https://github.com/voltura/voltura-hardtop/releases/download/v1.0.0/" + name }) });
         var liteFiles = new Dictionary<string, byte[]> { ["latest"] = liteMetadata, [liteAsset.name] = bytes, ["VolturaHardTop-Update-1.0.0.json"] = variants, ["VolturaHardTop-Update-1.0.0.sig"] = variantsSignature };
         var liteHttp = new FakeHttp(liteFiles);
@@ -143,9 +228,12 @@ internal static class Program
             Assert(updates.State.Ready && Path.GetFileName(updates.State.Installer) == liteAsset.name, "Lightweight update downloads and verifies end to end");
             Assert(!liteHttp.Requests.Contains(asset.name), "Lightweight update never requests the self-contained installer");
         }
-        await using (var updates = new UpdateService(new(dir, false, true), new FakeHttp(files), rsa.ExportSubjectPublicKeyInfoPem(), true, false, new(0, 9, 0), install: (_, _) => { installed = true; return Task.CompletedTask; }))
+        await using (var updates = new UpdateService(new(dir, false, true), new FakeHttp(files), rsa.ExportSubjectPublicKeyInfoPem(), true, false, new(0, 9, 0), install: (_, _) => { if (rejectInstallation) throw new System.ComponentModel.Win32Exception(1223); installed = true; return Task.CompletedTask; }))
         {
             await updates.CheckAsync(); Assert(updates.State.Ready, "Complete HTTP download verifies and stages an update");
+            Assert(!await updates.InstallAsync() && !installed && updates.State.Status == UpdateStatus.UpdateInstallFailed, "Cancelled installer launch reports failure without a successful handoff");
+            Assert(updates.State.Ready, "Failed installer launch keeps the verified package available for retry");
+            rejectInstallation = false;
             Assert(await updates.InstallAsync() && installed, "Verified installer handed off only after explicit installation");
         }
         await using (var updates = new UpdateService(new(dir, false, true), new FakeHttp(files), rsa.ExportSubjectPublicKeyInfoPem(), true, false, new(0, 9, 0), install: (_, _) => throw new Exception("Must never execute")))
@@ -168,6 +256,27 @@ internal static class Program
             await updates.CheckAsync();
             Assert(updates.State.Status == UpdateStatus.UpdateCheckFailed, "Manual update failure produces an actionable state");
         }
+        var retainedHttp = new FakeHttp(files);
+        await using (var updates = new UpdateService(new(Path.Combine(dir,"retained"),false,true),retainedHttp,rsa.ExportSubjectPublicKeyInfoPem(),true,false,new(0,9,0),install:(_,_)=>Task.CompletedTask))
+        {
+            await updates.CheckAsync();
+            retainedHttp.FailRequests=true;
+            await updates.CheckAsync();
+            Assert(updates.State.Status==UpdateStatus.UpdateCheckFailed && updates.State.Ready, "A failed recheck retains a verified cached installer for offline installation");
+            Assert(await updates.InstallAsync(), "Retained verified update installs without another network request");
+        }
+        var cancelledHttp = new FakeHttp(files);
+        await using (var updates = new UpdateService(new(Path.Combine(dir,"cancelled"),false,true),cancelledHttp,rsa.ExportSubjectPublicKeyInfoPem(),true,false,new(0,9,0)))
+        {
+            await updates.CheckAsync();
+            var cached=updates.State.Installer;
+            cancelledHttp.HoldRequests=true;
+            var checking=updates.CheckAsync();
+            await cancelledHttp.RequestStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            updates.CancelCheck();
+            await checking;
+            Assert(updates.State.Ready && updates.State.Installer==cached, "Cancelling a recheck restores the verified ready update");
+        }
         // Temporary directory is created by this process, with a random fixed-prefix name.
         Assert(Path.GetFileName(dir).StartsWith("VolturaHardTop.Checks-") && Path.GetFullPath(dir).StartsWith(Path.GetFullPath(Path.GetTempPath()), StringComparison.OrdinalIgnoreCase), "Fixture cleanup stays in the test directory");
         Directory.Delete(dir, true);
@@ -185,18 +294,27 @@ internal static class Program
         }
         app.Run();
     }
+    private static void AssertSameIcon(ImageSource? actual, ImageSource? expected)
+    {
+        if (!ReferenceEquals(actual, expected)) throw new Exception("Unchanged native icon was converted again.");
+    }
     private sealed class FakeWindows : IWindows
     {
-        public bool Topmost, Current = true, Allowed = true;
+        public bool Topmost, Current = true, Allowed = true, IgnoreChanges;
         public bool IsCurrent(WindowIdentity id) => Current;
         public bool IsTopmost(WindowIdentity id) => Topmost;
-        public bool SetTopmost(WindowIdentity id, bool topmost) { if (!Allowed || !Current) return false; Topmost = topmost; return true; }
+        public bool SetTopmost(WindowIdentity id, bool topmost) { if (!Allowed || !Current) return false; if (!IgnoreChanges) Topmost = topmost; return true; }
     }
     private sealed class FakeHttp(Dictionary<string, byte[]> files) : HttpMessageHandler
     {
         public List<string> Requests { get; } = [];
+        public bool FailRequests { get; set; }
+        public bool HoldRequests { get; set; }
+        public TaskCompletionSource RequestStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
         {
+            if(FailRequests) return Task.FromException<HttpResponseMessage>(new HttpRequestException("Fixture recheck failure"));
+            if(HoldRequests) {RequestStarted.TrySetResult();return new TaskCompletionSource<HttpResponseMessage>().Task.WaitAsync(token);}
             var name = request.RequestUri!.Segments[^1]; Requests.Add(name);
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(files[name]) });
         }
@@ -222,5 +340,35 @@ internal static class Program
     private sealed class MemoryStartup : IStartupService
     {
         public bool Enabled { get; set; }
+    }
+    private sealed class DelayedWindows : IWindowSource, IWindows
+    {
+        public WindowIdentity Identity { get; } = new(50, 50, 50);
+        public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public ManualResetEventSlim Release { get; } = new();
+        private volatile bool pinned;
+        private int calls;
+        public IReadOnlyList<DesktopWindow> Enumerate()
+        {
+            var snapshot = new DesktopWindow(Identity, "Delayed window", "Fixture", pinned);
+            if (Interlocked.Increment(ref calls) == 1)
+            {
+                Started.SetResult();
+                if (!Release.Wait(TimeSpan.FromSeconds(5))) throw new TimeoutException("Fixture was not released.");
+            }
+            return [snapshot];
+        }
+        public bool IsCurrent(WindowIdentity identity) => identity == Identity;
+        public bool IsTopmost(WindowIdentity identity) => pinned;
+        public bool SetTopmost(WindowIdentity identity, bool value) { pinned = value; return true; }
+    }
+    private sealed class MutableSource : IWindowSource
+    {
+        public IReadOnlyList<DesktopWindow> Snapshot { get; set; } = [];
+        public IReadOnlyList<DesktopWindow> Enumerate() => Snapshot;
+    }
+    private sealed class RestrictedStartup : IStartupService
+    {
+        public bool Enabled { get => throw new UnauthorizedAccessException("Fixture registry policy"); set => throw new UnauthorizedAccessException("Fixture registry policy"); }
     }
 }

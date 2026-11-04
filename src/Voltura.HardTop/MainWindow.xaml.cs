@@ -33,6 +33,7 @@ public partial class MainWindow : Window
         this.picker = picker;
         this.preferences = preferences;
         InitializeComponent();
+        preferences.Feedback += ShowStatus;
         app.ApplyTheme();
         SourceInitialized += (_, _) => ApplyOpacity();
         WindowWorkAreaPlacement.ConstrainAndCenterOnFirstLoad(this);
@@ -53,7 +54,6 @@ public partial class MainWindow : Window
         Intro.Visibility = preferences.Value.Introduced ? Visibility.Collapsed : Visibility.Visible;
 
         picker.PropertyChanged += (_, _) => RenderRows();
-        preferences.Feedback += ShowStatus;
         preferences.Changed += PreferenceChanged;
         PickerKeys.TextChanged += RefreshShortcutButtons;
         ToggleKeys.TextChanged += RefreshShortcutButtons;
@@ -61,14 +61,10 @@ public partial class MainWindow : Window
         refresh.Tick += (_, _) => RefreshWindows();
         IsVisibleChanged += (_, _) =>
         {
-            if (IsVisible)
-            {
-                refresh.Start();
-                RefreshWindows();
-            }
-            else
-                refresh.Stop();
+            UpdateRefreshSchedule();
+            RefreshWindows();
         };
+        StateChanged += (_, _) => { UpdateRefreshSchedule(); RefreshWindows(); };
         Closing += (_, args) =>
         {
             if (app.ExitAllowed)
@@ -116,11 +112,11 @@ public partial class MainWindow : Window
             RefreshPreferenceLabels();
             loading = false;
             picker.RefreshLabels();
+            RenderRows(); // Empty or unchanged rows still need localized counts and empty text.
             application.RebuildTray();
             RefreshUpdate();
             ApplyOpacity();
             RefreshVersion();
-            RefreshShortcutButtons();
         }
         if (change.HasFlag(PreferenceChange.Appearance))
         {
@@ -131,11 +127,12 @@ public partial class MainWindow : Window
             ApplyOpacity();
         if (change.HasFlag(PreferenceChange.Updates))
             application.Updates.Start(preferences.Value.AutomaticUpdates);
+        RefreshShortcutButtons();
     }
 
     public async void RefreshWindows()
     {
-        if (!IsVisible || PickerPanel.Visibility != Visibility.Visible)
+        if (!IsVisible || WindowState == WindowState.Minimized || PickerPanel.Visibility != Visibility.Visible)
             return;
         try
         {
@@ -145,6 +142,14 @@ public partial class MainWindow : Window
         {
             ShowStatus("ActionFailed");
         }
+    }
+
+    private void UpdateRefreshSchedule()
+    {
+        if (IsVisible && WindowState != WindowState.Minimized && PickerPanel.Visibility == Visibility.Visible)
+            refresh.Start();
+        else
+            refresh.Stop();
     }
 
     private void RenderRows()
@@ -199,6 +204,7 @@ public partial class MainWindow : Window
         PreferencesTitle.Visibility = BackButton.Visibility = Visibility.Collapsed;
         PreferencesButton.Visibility = Visibility.Visible;
         Intro.Visibility = preferences.Value.Introduced ? Visibility.Collapsed : Visibility.Visible;
+        UpdateRefreshSchedule();
         RefreshWindows();
         Search.Focus();
     }
@@ -209,12 +215,20 @@ public partial class MainWindow : Window
         SettingsPanel.Visibility = Visibility.Visible;
         PreferencesTitle.Visibility = BackButton.Visibility = Visibility.Visible;
         PreferencesButton.Visibility = Intro.Visibility = Visibility.Collapsed;
+        UpdateRefreshSchedule();
         RefreshUpdate();
     }
 
     private async void Toggle(WindowRow row)
     {
-        ShowStatus(await picker.ToggleAsync(row.Window.Identity) ? "PinChanged" : "PinFailed");
+        try
+        {
+            ShowStatus(await picker.ToggleAsync(row.Window.Identity) ? "PinChanged" : "PinFailed");
+        }
+        catch (Exception error) when (error is System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            ShowStatus("ActionFailed");
+        }
         RaisePicker();
     }
 
@@ -260,9 +274,9 @@ public partial class MainWindow : Window
 
     private void WindowDoubleClick(object sender, MouseButtonEventArgs e)
     {
-        if (e.OriginalSource is DependencyObject source && FindButton(source))
+        if (e.OriginalSource is not DependencyObject source || FindButton(source))
             return;
-        if (WindowList.SelectedItem is WindowRow row)
+        if (ItemsControl.ContainerFromElement(WindowList, source) is ListBoxItem { DataContext: WindowRow row })
             Toggle(row);
     }
 
@@ -303,28 +317,29 @@ public partial class MainWindow : Window
     {
         preferences.SetStartup(StartupChoice.IsChecked == true);
         StartupChoice.IsChecked = preferences.StartWithWindows;
+        StartupChoice.IsEnabled = preferences.StartupAvailable;
     }
     private void RefreshShortcutButtons()
     {
-        ApplyPickerButton.IsEnabled = !PickerKeys.IsCapturing && ShortcutDiffers(PickerKeys.Text, preferences.Value.PickerShortcut);
-        ApplyToggleButton.IsEnabled = !ToggleKeys.IsCapturing && ShortcutDiffers(ToggleKeys.Text, preferences.Value.ToggleShortcut);
+        ApplyPickerButton.IsEnabled = !PickerKeys.IsCapturing && (preferences.HasUnsavedChanges || ShortcutDiffers(PickerKeys.Text, preferences.Value.PickerShortcut));
+        ApplyToggleButton.IsEnabled = !ToggleKeys.IsCapturing && (preferences.HasUnsavedChanges || ShortcutDiffers(ToggleKeys.Text, preferences.Value.ToggleShortcut));
         PickerError.Visibility = ToggleError.Visibility = Visibility.Collapsed;
     }
     private static bool ShortcutDiffers(string candidate, string saved) =>
         !HotkeyGesture.TryParse(candidate, out var next) || !HotkeyGesture.TryParse(saved, out var previous) || next != previous;
     private void ApplyPicker(object sender, RoutedEventArgs e)
     {
-        var success = preferences.ApplyPickerShortcut(PickerKeys.Text);
+        var result = preferences.ApplyPickerShortcut(PickerKeys.Text);
         RefreshShortcutButtons();
-        PickerError.Text = Strings.Current["ShortcutInUse"];
-        PickerError.Visibility = success ? Visibility.Collapsed : Visibility.Visible;
+        PickerError.Text = Strings.Current[result == ShortcutApplyResult.RegistrationFailed ? "ShortcutInUse" : "SaveFailed"];
+        PickerError.Visibility = result == ShortcutApplyResult.Applied ? Visibility.Collapsed : Visibility.Visible;
     }
     private void ApplyToggle(object sender, RoutedEventArgs e)
     {
-        var success = preferences.ApplyToggleShortcut(ToggleKeys.Text);
+        var result = preferences.ApplyToggleShortcut(ToggleKeys.Text);
         RefreshShortcutButtons();
-        ToggleError.Text = Strings.Current["ShortcutInUse"];
-        ToggleError.Visibility = success ? Visibility.Collapsed : Visibility.Visible;
+        ToggleError.Text = Strings.Current[result == ShortcutApplyResult.RegistrationFailed ? "ShortcutInUse" : "SaveFailed"];
+        ToggleError.Visibility = result == ShortcutApplyResult.Applied ? Visibility.Collapsed : Visibility.Visible;
     }
     private void AutomaticChanged(object sender, RoutedEventArgs e) => preferences.SetAutomaticUpdates(AutomaticChoice.IsChecked == true);
 

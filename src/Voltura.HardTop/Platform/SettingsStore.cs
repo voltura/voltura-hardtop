@@ -1,9 +1,11 @@
 using System.Text.Json;
+using Voltura.HardTop.Localization;
 
 namespace Voltura.HardTop.Platform;
 
 public sealed class SettingsStore
 {
+    private const int MaximumSettingsBytes = 64 * 1024;
     public bool Portable
     {
         get;
@@ -33,11 +35,15 @@ public sealed class SettingsStore
             return new();
         try
         {
-            var settings = JsonSerializer.Deserialize<Preferences>(File.ReadAllText(path)) ?? throw new JsonException();
+            using var input = File.OpenRead(path);
+            if (input.Length > MaximumSettingsBytes)
+                throw new JsonException("Settings file exceeds the supported size.");
+            using var reader = new StreamReader(input);
+            var settings = JsonSerializer.Deserialize<Preferences>(reader.ReadToEnd()) ?? throw new JsonException();
             if (settings.Theme is not ("system" or "light" or "dark"))
                 settings.Theme = "system";
             settings.OpacityPercent = Math.Clamp(settings.OpacityPercent, 60, 100);
-            if (string.IsNullOrWhiteSpace(settings.Language))
+            if (!LanguageCatalog.IsSupported(settings.Language))
                 settings.Language = "system";
             if (!HotkeyGesture.TryParse(settings.PickerShortcut, out _))
                 settings.PickerShortcut = "Ctrl+Alt+Z";
@@ -52,7 +58,7 @@ public sealed class SettingsStore
             {
                 File.Copy(path, path + ".recovered-" + DateTime.UtcNow.ToString("yyyyMMddHHmmss"), false);
             }
-            catch (IOException) { }
+            catch (Exception backupError) when (backupError is IOException or UnauthorizedAccessException) { }
             return new();
         }
     }

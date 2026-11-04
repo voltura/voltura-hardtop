@@ -69,7 +69,7 @@
   "PinFailed": "Tidak dapat mengubah jendela. Jendela mungkin ditutup atau memerlukan akses administrator.",
   "PinChanged": "Jendela diperbarui.",
   "ShortcutConflict": "Pintasan tidak tersedia. Pilih kombinasi lain; pintasan sebelumnya tetap berlaku.",
-  "SettingsRecovered": "Pengaturan dipulihkan. Salinan berkas asli disimpan.",
+  "SettingsRecovered": "Pengaturan dipulihkan.",
   "SaveFailed": "Tidak dapat menyimpan pengaturan. Periksa izin folder.",
   "InstallPrompt": "Pasang pembaruan terverifikasi? HardTop akan memulihkan perubahan dan menutup. Pemasang dapat membukanya kembali.",
   "Apply": "Terapkan",

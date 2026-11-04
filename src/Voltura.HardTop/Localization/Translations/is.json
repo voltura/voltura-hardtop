@@ -69,7 +69,7 @@
   "PinFailed": "Ekki tókst að breyta glugganum. Hann gæti verið lokaður eða krafist stjórnandaréttinda.",
   "PinChanged": "Gluggi uppfærður.",
   "ShortcutConflict": "Flýtilykill ekki tiltækur. Veldu annan; sá fyrri helst óbreyttur.",
-  "SettingsRecovered": "Stillingar endurheimtar. Afrit af upprunalegu skránni var varðveitt.",
+  "SettingsRecovered": "Stillingar endurheimtar.",
   "SaveFailed": "Ekki tókst að vista stillingar. Athugaðu heimildir möppunnar.",
   "InstallPrompt": "Setja upp staðfesta uppfærslu? HardTop afturkallar breytingar sínar og lokast. Uppsetningin getur opnað forritið aftur.",
   "Apply": "Virkja",

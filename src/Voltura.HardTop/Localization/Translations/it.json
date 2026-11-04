@@ -69,7 +69,7 @@
   "PinFailed": "Impossibile modificare la finestra. Potrebbe essere chiusa o richiedere diritti di amministratore.",
   "PinChanged": "Finestra aggiornata.",
   "ShortcutConflict": "Scorciatoia non disponibile. Scegline un’altra; quella precedente resta invariata.",
-  "SettingsRecovered": "Impostazioni recuperate. È stata conservata una copia del file originale.",
+  "SettingsRecovered": "Impostazioni recuperate.",
   "SaveFailed": "Impossibile salvare le impostazioni. Controlla i permessi della cartella.",
   "InstallPrompt": "Installare l’aggiornamento verificato? HardTop ripristinerà le modifiche e si chiuderà. L’installazione potrà riaprirlo.",
   "Apply": "Applica",

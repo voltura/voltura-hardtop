@@ -69,7 +69,7 @@
   "PinFailed": "Kunde inte ändra fönstret. Det kan ha stängts eller kräva administratörsbehörighet.",
   "PinChanged": "Fönstret uppdaterat.",
   "ShortcutConflict": "Kortkommandot är upptaget. Välj en annan kombination; det tidigare är oförändrat.",
-  "SettingsRecovered": "Inställningarna återställdes. En kopia av originalfilen sparades.",
+  "SettingsRecovered": "Inställningarna återställdes.",
   "SaveFailed": "Kunde inte spara inställningarna. Kontrollera mappens behörigheter.",
   "InstallPrompt": "Installera den verifierade uppdateringen? HardTop återställer sina fäständringar och avslutas. Installationen kan öppna appen igen.",
   "Apply": "Tillämpa",

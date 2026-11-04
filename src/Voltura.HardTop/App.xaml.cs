@@ -125,10 +125,10 @@ public partial class App : Application
     {
         theme ??= new ThemeService(this);
         theme.Apply(Settings.Value.Theme);
-        RebuildTray();
+        RebuildTray(force: true);
     }
 
-    internal void RebuildTray() => tray?.Rebuild(theme?.IsDark == true, Updates?.State.Ready == true);
+    internal void RebuildTray(bool force = false) => tray?.Rebuild(theme?.IsDark == true, Updates?.State.Ready == true, force);
     private void SystemThemeChanged(object sender, UserPreferenceChangedEventArgs e) => Dispatcher.BeginInvoke(ApplyTheme);
 
     internal static void Open(string url) => Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
@@ -144,8 +144,8 @@ public partial class App : Application
     private void InstallPreparedUpdate(string path, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
-        Pins.Restore();
-        Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+        using var installer = Process.Start(new ProcessStartInfo(path) { UseShellExecute = true })
+            ?? throw new InvalidOperationException(Strings.Current["InstallerDidNotStart"]);
         ExitApplication();
     }
 

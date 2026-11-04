@@ -69,7 +69,7 @@
   "PinFailed": "Ikkunaa ei voitu muuttaa. Se on ehkä suljettu tai vaatii järjestelmänvalvojan oikeudet.",
   "PinChanged": "Ikkuna päivitetty.",
   "ShortcutConflict": "Pikanäppäin ei ole käytettävissä. Valitse toinen; edellinen säilyy.",
-  "SettingsRecovered": "Asetukset palautettiin. Alkuperäisestä tiedostosta säilytettiin kopio.",
+  "SettingsRecovered": "Asetukset palautettiin.",
   "SaveFailed": "Asetuksia ei voitu tallentaa. Tarkista kansion käyttöoikeudet.",
   "InstallPrompt": "Asennetaanko varmennettu päivitys? HardTop palauttaa muutoksensa ja sulkeutuu. Asennus voi avata sovelluksen uudelleen.",
   "Apply": "Käytä",

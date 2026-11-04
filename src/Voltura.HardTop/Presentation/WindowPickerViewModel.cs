@@ -15,7 +15,7 @@ public sealed class WindowPickerViewModel(IWindowSource source, PinSession pins)
     private IReadOnlyList<WindowRow> rows = [];
     private string searchText = string.Empty;
     private bool pinnedOnly;
-    private bool refreshing;
+    private Task? refreshTask;
 
     public event PropertyChangedEventHandler? PropertyChanged;
     public IReadOnlyList<WindowRow> Rows => rows;
@@ -52,32 +52,37 @@ public sealed class WindowPickerViewModel(IWindowSource source, PinSession pins)
         }
     }
 
-    public async Task RefreshAsync()
+    public Task RefreshAsync()
     {
-        if (refreshing)
-            return;
-        refreshing = true;
+        if (refreshTask is { IsCompleted: false })
+            return refreshTask;
+        return refreshTask = RefreshCoreAsync();
+    }
 
-        try
-        {
-            var latest = await Task.Run(source.Enumerate);
-            // Keep surviving rows in place when titles or native z-order change.
-            var byIdentity = latest.ToDictionary(window => window.Identity);
-            windows = windows.Where(window => byIdentity.ContainsKey(window.Identity))
-                .Select(window => byIdentity[window.Identity])
-                .Concat(latest.Where(window => !windows.Any(old => old.Identity == window.Identity)))
-                .ToArray();
-            Filter();
-        }
-        finally
-        {
-            refreshing = false;
-        }
+    private async Task RefreshCoreAsync()
+    {
+        var latest = await Task.Run(source.Enumerate);
+        // Keep surviving rows in place when titles or native z-order change.
+        var byIdentity = latest.ToDictionary(window => window.Identity);
+        var ordered = new List<DesktopWindow>(latest.Count);
+        foreach (var previous in windows)
+            if (byIdentity.Remove(previous.Identity, out var current))
+                ordered.Add(current);
+        foreach (var current in latest)
+            if (byIdentity.Remove(current.Identity))
+                ordered.Add(current);
+        windows = ordered;
+        Filter();
     }
 
     public async Task<bool> ToggleAsync(WindowIdentity identity)
     {
+        var earlierRefresh = refreshTask;
         var changed = pins.Toggle(identity);
+        // An older scan may already have captured the pre-toggle state. Wait for it
+        // before requesting the scan that acknowledges this action.
+        if (earlierRefresh is { IsCompleted: false })
+            await earlierRefresh;
         await RefreshAsync();
         return changed;
     }
@@ -87,21 +92,36 @@ public sealed class WindowPickerViewModel(IWindowSource source, PinSession pins)
     private void Filter()
     {
         var query = searchText.Trim();
-        var matching = windows
-            .Where(window => window.Title.Contains(query, StringComparison.CurrentCultureIgnoreCase)
-                || window.Application.Contains(query, StringComparison.CurrentCultureIgnoreCase))
-            .ToArray();
-        var countsChanged = MatchingCount != matching.Length || MatchingPinnedCount != matching.Count(window => window.Pinned);
-        MatchingCount = matching.Length;
-        MatchingPinnedCount = matching.Count(window => window.Pinned);
-        var next = matching.Where(window => !pinnedOnly || window.Pinned)
-            .Select(window => new WindowRow(window, Strings.Current[window.Pinned ? "Unpin" : "Pin"]))
-            .ToArray();
-
-        var previousState = rows.Select(row => (row.Window.Identity, row.Window.Title, row.Window.Application, row.Window.Pinned, row.ActionLabel));
-        var nextState = next.Select(row => (row.Window.Identity, row.Window.Title, row.Window.Application, row.Window.Pinned, row.ActionLabel));
-
-        if (previousState.SequenceEqual(nextState) && !countsChanged)
+        var next = new List<WindowRow>(windows.Count);
+        var matchingCount = 0;
+        var pinnedCount = 0;
+        var changed = false;
+        var pinLabel = Strings.Current["Pin"];
+        var unpinLabel = Strings.Current["Unpin"];
+        foreach (var window in windows)
+        {
+            if (!window.Title.Contains(query, StringComparison.CurrentCultureIgnoreCase)
+                && !window.Application.Contains(query, StringComparison.CurrentCultureIgnoreCase))
+                continue;
+            matchingCount++;
+            if (window.Pinned)
+                pinnedCount++;
+            if (pinnedOnly && !window.Pinned)
+                continue;
+            var label = window.Pinned ? unpinLabel : pinLabel;
+            var previous = next.Count < rows.Count ? rows[next.Count] : null;
+            if (previous is not null && previous.Window == window && previous.ActionLabel == label)
+                next.Add(previous);
+            else
+            {
+                next.Add(new(window, label));
+                changed = true;
+            }
+        }
+        var countsChanged = MatchingCount != matchingCount || MatchingPinnedCount != pinnedCount;
+        MatchingCount = matchingCount;
+        MatchingPinnedCount = pinnedCount;
+        if (!changed && rows.Count == next.Count && !countsChanged)
             return;
         rows = next;
         PropertyChanged?.Invoke(this, new(nameof(Rows)));

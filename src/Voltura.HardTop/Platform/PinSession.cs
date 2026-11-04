@@ -23,10 +23,16 @@ public sealed class PinSession(IWindows windows)
         foreach (var (id, value) in changes.ToArray())
         {
             // Do not overwrite changes made independently by another application.
-            if (windows.IsCurrent(id) && windows.IsTopmost(id) == value.Last && !windows.SetTopmost(id, value.Original))
-                failures++;
+            if (windows.IsCurrent(id) && windows.IsTopmost(id) == value.Last)
+            {
+                if (!windows.SetTopmost(id, value.Original) || windows.IsTopmost(id) != value.Original)
+                {
+                    failures++;
+                    continue; // Keep failed changes so a later restore can retry them.
+                }
+            }
+            changes.Remove(id);
         }
-        changes.Clear();
         return failures;
     }
 }
