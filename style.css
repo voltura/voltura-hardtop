@@ -97,7 +97,7 @@ kbd { display: inline-flex; justify-content: center; min-width: 31px; padding: 4
 .section-heading { display: grid; grid-template-columns: 1fr 1fr; column-gap: 50px; align-items: end; }
 .section-heading .eyebrow { grid-column: 1 / -1; }
 .section-heading > p:last-child { color: var(--muted); padding-bottom: 5px; max-width: 340px; font-size: 1.05rem; }
-.packages { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 42px; }
+.packages { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; margin-top: 42px; }
 .package { border: 1px solid var(--line); border-radius: 16px; padding: 30px; background: var(--surface); }
 .package-recommended { border-color: var(--blue); }
 .package-heading { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-bottom: 15px; }
