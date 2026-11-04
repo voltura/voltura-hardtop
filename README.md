@@ -60,3 +60,13 @@ This is a new application based on [original HardTop](https://github.com/voltura
 [Contribute](CONTRIBUTING.md) · [Security](SECURITY.md) · [Privacy](PRIVACY.md) · [Code of conduct](CODE_OF_CONDUCT.md)
 
 If HardTop helps you, [support Voltura via PayPal](https://www.paypal.me/voltura) or [buy me a coffee](https://ko-fi.com/G2G74W5F8).
+
+## Statistics
+
+[![Visitors](https://hits.sh/github.com/voltura/voltura-hardtop.svg?style=flat&label=visitors&labelColor=555&color=5690f2)](https://hits.sh/github.com/voltura/voltura-hardtop/)
+[![Code size](https://img.shields.io/github/languages/code-size/voltura/voltura-hardtop)](https://github.com/voltura/voltura-hardtop)
+[![Stars](https://img.shields.io/github/stars/voltura/voltura-hardtop)](https://github.com/voltura/voltura-hardtop/stargazers)
+[![Forks](https://img.shields.io/github/forks/voltura/voltura-hardtop)](https://github.com/voltura/voltura-hardtop/forks)
+[![Last commit](https://img.shields.io/github/last-commit/voltura/voltura-hardtop?color=red)](https://github.com/voltura/voltura-hardtop/commits)
+[![Languages](https://img.shields.io/github/languages/count/voltura/voltura-hardtop?cacheSeconds=3600)](https://github.com/voltura/voltura-hardtop)
+[![Top language](https://img.shields.io/github/languages/top/voltura/voltura-hardtop)](https://github.com/voltura/voltura-hardtop)
