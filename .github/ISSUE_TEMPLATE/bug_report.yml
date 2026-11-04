@@ -1,0 +1,11 @@
+name: Bug report
+description: Report a problem with Voltura HardTop
+body:
+  - type: input
+    id: version
+    attributes: {label: App and Windows version}
+    validations: {required: true}
+  - type: textarea
+    id: steps
+    attributes: {label: Steps to reproduce, description: "What happened and what did you expect? Redact private window titles and paths."}
+    validations: {required: true}

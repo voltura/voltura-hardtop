@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType><TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF><UseWindowsForms>true</UseWindowsForms><RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <ApplicationManifest>app.manifest</ApplicationManifest><ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <NoWarn>$(NoWarn);WFO0003</NoWarn><ApplicationIcon>Assets/App.ico</ApplicationIcon>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Company>Voltura AB</Company><Product>Voltura HardTop</Product><Title>Voltura HardTop</Title>
+    <Authors>Joakim Skoglund</Authors><AssemblyTitle>Voltura HardTop</AssemblyTitle>
+    <AssemblyVersion>$(Version).0</AssemblyVersion><FileVersion>$(Version).0</FileVersion>
+    <InformationalVersion>$(Version)</InformationalVersion><IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression><PackageProjectUrl>https://hardtop.voltura.se/</PackageProjectUrl>
+    <Description>Keep the windows you need above the rest.</Description><Copyright>Copyright © 2026 Voltura AB</Copyright>
+  </PropertyGroup>
+  <ItemGroup>
+    <AssemblyMetadata Include="Developer" Value="Joakim Skoglund"/><AssemblyMetadata Include="Website" Value="https://hardtop.voltura.se/"/>
+    <AssemblyMetadata Include="Support" Value="https://github.com/voltura/voltura-hardtop/issues"/><AssemblyMetadata Include="License" Value="MIT"/>
+    <Resource Include="Assets/App.ico"/><Resource Include="Assets/Brand.png"/>
+    <EmbeddedResource Include="Localization/Translations/*.json"/><EmbeddedResource Include="Updates/public.pem"/>
+    <None Include="../../LICENSE" Link="LICENSE.txt" CopyToOutputDirectory="PreserveNewest"/>
+    <None Include="../../THIRD-PARTY-NOTICES.md" Link="THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest"/>
+    <InternalsVisibleTo Include="HardTop.Checks"/>
+  </ItemGroup>
+</Project>

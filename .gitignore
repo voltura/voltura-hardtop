@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+artifacts/
+work/
+.vs/
+*.user
+*.pfx
+*.p12
+*.key
+*.private.pem

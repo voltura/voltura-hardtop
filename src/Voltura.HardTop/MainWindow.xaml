@@ -1,0 +1,284 @@
+<Window x:Class="Voltura.HardTop.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:loc="clr-namespace:Voltura.HardTop.Localization" xmlns:ui="clr-namespace:Voltura.HardTop.Ui" Title="Voltura HardTop" Width="700" Height="760" MinWidth="510" MinHeight="540" AllowsTransparency="True" WindowStyle="None" Background="Transparent" ResizeMode="CanResizeWithGrip" WindowStartupLocation="CenterScreen" Icon="Assets/App.ico" UseLayoutRounding="True" TextOptions.TextFormattingMode="Display" Style="{StaticResource {x:Type Window}}">
+  <Window.Resources>
+    <Style x:Key="SectionCard" TargetType="Border">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="16" />
+      <Setter Property="Margin" Value="0,0,0,16" />
+    </Style>
+    <Style x:Key="SectionTitle" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="{DynamicResource HeadingSize}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Margin" Value="0,0,0,16" />
+    </Style>
+    <Style x:Key="QuietButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="Padding" Value="10,7" />
+    </Style>
+    <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+      <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style x:Key="FilterButton" TargetType="RadioButton">
+      <Setter Property="FocusVisualStyle" Value="{StaticResource KeyboardFocus}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Padding" Value="12,7" />
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="RadioButton">
+            <Border x:Name="Segment" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+              <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Center" />
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Segment" Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+              </Trigger>
+              <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="Segment" Property="Background" Value="{DynamicResource AccentBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="Segment" Property="Opacity" Value="0.8" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <Style x:Key="WindowRowStyle" TargetType="ListBoxItem">
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="AutomationProperties.Name" Value="{Binding Window.Title}" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="0,0,0,8" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ListBoxItem">
+            <Border x:Name="RowChrome" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" CornerRadius="8">
+              <ContentPresenter />
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsSelected" Value="True">
+                <Setter TargetName="RowChrome" Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+              </Trigger>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="RowChrome" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+  </Window.Resources>
+  <Border Background="{DynamicResource BackgroundBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" CornerRadius="12">
+    <DockPanel>
+      <Grid DockPanel.Dock="Top" Height="36" Background="Transparent" MouseLeftButtonDown="TitlebarMouseDown">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <TextBlock Text="Voltura HardTop" FontSize="{DynamicResource SecondarySize}" Foreground="{DynamicResource MutedBrush}" Margin="16,0" VerticalAlignment="Center" />
+        <StackPanel Grid.Column="1" Orientation="Horizontal">
+          <Button Click="MinimizeClick" Style="{StaticResource QuietButton}" Width="42" MinHeight="0" Margin="0" Padding="12,8" AutomationProperties.Name="{loc:Loc MinimizeWindow}" ToolTip="{loc:Loc MinimizeWindow}">
+            <Path Data="M 0 5 L 10 5" Stroke="{DynamicResource TextBrush}" Width="10" Height="10" />
+          </Button>
+          <Button Click="MaximizeClick" Style="{StaticResource QuietButton}" Width="42" MinHeight="0" Margin="0" Padding="12,8" AutomationProperties.Name="{loc:Loc MaximizeWindow}" ToolTip="{loc:Loc MaximizeWindow}">
+            <Rectangle Stroke="{DynamicResource TextBrush}" Width="10" Height="10" />
+          </Button>
+          <Button Click="HideClick" Style="{StaticResource QuietButton}" Width="42" MinHeight="0" Margin="0,0,4,0" Padding="12,8" AutomationProperties.Name="{loc:Loc Close}" ToolTip="{loc:Loc Close}">
+            <Path Data="M 0 0 L 10 10 M 0 10 L 10 0" Stroke="{DynamicResource TextBrush}" Width="10" Height="10" />
+          </Button>
+        </StackPanel>
+      </Grid>
+      <Grid Margin="24,12,24,24">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="*" />
+          <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <DockPanel Margin="0,0,0,16">
+          <Grid DockPanel.Dock="Right" Margin="16,0,0,0" VerticalAlignment="Center">
+            <Button x:Name="PreferencesButton" Content="{loc:Loc Preferences}" Click="SettingsClick" Margin="0" />
+            <Button x:Name="BackButton" Click="BackClick" Margin="0" MaxWidth="210" Visibility="Collapsed" AutomationProperties.Name="{loc:Loc BackToWindows}">
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <Path Data="M 7,0 L 0,7 L 7,14 M 0,7 L 16,7" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="1.7" Width="17" Height="15" Margin="0,0,8,0" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{loc:Loc BackToWindows}" VerticalAlignment="Center" />
+              </Grid>
+            </Button>
+          </Grid>
+          <Grid VerticalAlignment="Center">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="46" />
+              <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <Image Source="Assets/Brand.png" Width="36" Height="36" Margin="0,0,10,0" />
+            <TextBlock Grid.Column="1" Text="Voltura HardTop" FontSize="{DynamicResource HeadingSize}" FontWeight="SemiBold" VerticalAlignment="Center" />
+          </Grid>
+        </DockPanel>
+        <TextBlock x:Name="PreferencesTitle" Grid.Row="1" Text="{loc:Loc Preferences}" FontSize="{DynamicResource PageTitleSize}" FontWeight="SemiBold" Margin="0,0,0,16" Visibility="Collapsed" />
+        <Border x:Name="Intro" Grid.Row="2" Style="{StaticResource SectionCard}" Background="{DynamicResource AccentSoftBrush}" Visibility="Collapsed">
+          <StackPanel>
+            <TextBlock Text="{loc:Loc Welcome}" FontSize="{DynamicResource HeadingSize}" FontWeight="SemiBold" />
+            <TextBlock Text="{loc:Loc IntroText}" Margin="0,8,0,12" />
+            <Button Content="{loc:Loc GetStarted}" Click="IntroClick" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Left" />
+          </StackPanel>
+        </Border>
+        <Grid x:Name="PickerPanel" Grid.Row="3">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+          </Grid.RowDefinitions>
+          <StackPanel>
+            <TextBlock Text="{loc:Loc SearchWindows}" Margin="0,0,0,8" />
+            <Grid>
+              <TextBox x:Name="Search" TextChanged="SearchChanged" AutomationProperties.Name="{loc:Loc SearchWindows}" MinHeight="38" Padding="35,7,42,7" />
+              <Path Data="M 11.5 6.5 A 5 5 0 1 1 1.5 6.5 A 5 5 0 1 1 11.5 6.5 M 10 10 L 15.5 15.5" Stroke="{DynamicResource MutedBrush}" StrokeThickness="1.7" Width="17" Height="17" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="12,0,0,0" IsHitTestVisible="False" />
+              <Button x:Name="ClearSearch" Click="ClearSearchClick" HorizontalAlignment="Right" VerticalAlignment="Center" Width="32" MinHeight="30" Margin="0,0,4,0" Padding="8" ToolTip="{loc:Loc ClearSearch}" AutomationProperties.Name="{loc:Loc ClearSearch}">
+                <Button.Style>
+                  <Style TargetType="Button" BasedOn="{StaticResource QuietButton}">
+                    <Setter Property="Visibility" Value="Visible" />
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding Text, ElementName=Search}" Value="">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                      </DataTrigger>
+                    </Style.Triggers>
+                  </Style>
+                </Button.Style>
+                <Path Data="M 0 0 L 10 10 M 0 10 L 10 0" Stroke="{DynamicResource TextBrush}" StrokeThickness="1.7" Width="10" Height="10" />
+              </Button>
+            </Grid>
+          </StackPanel>
+          <Border Grid.Row="1" HorizontalAlignment="Left" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" CornerRadius="8" Padding="2" Margin="0,16">
+            <WrapPanel>
+              <RadioButton x:Name="AllButton" GroupName="WindowFilter" IsChecked="True" Click="AllClick" Style="{StaticResource FilterButton}" />
+              <RadioButton x:Name="PinnedButton" GroupName="WindowFilter" Click="PinnedClick" Style="{StaticResource FilterButton}" />
+            </WrapPanel>
+          </Border>
+          <Grid Grid.Row="2">
+            <ListBox x:Name="WindowList" MouseDoubleClick="WindowDoubleClick" KeyDown="WindowKeyDown" AutomationProperties.Name="{loc:Loc AllWindows}" ItemContainerStyle="{StaticResource WindowRowStyle}" IsTextSearchEnabled="False" ScrollViewer.VerticalScrollBarVisibility="Visible" ScrollViewer.CanContentScroll="False" Padding="0,0,6,0">
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <Grid Margin="12,10">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="42" />
+                      <ColumnDefinition />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Grid Width="28" Height="28" HorizontalAlignment="Left" VerticalAlignment="Center">
+                      <Path x:Name="GenericWindow" Data="M 2,3 L 22,3 L 22,21 L 2,21 Z M 2,8 L 22,8" Stroke="{DynamicResource MutedBrush}" StrokeThickness="1.5" Visibility="Collapsed" />
+                      <Image Source="{Binding Window.Icon}" />
+                    </Grid>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,12,0">
+                      <TextBlock Text="{Binding Window.Title}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" FontWeight="SemiBold" ToolTip="{Binding Window.Title}" AutomationProperties.Name="{Binding Window.Title}" />
+                      <TextBlock Text="{Binding Window.Application}" FontSize="{DynamicResource SecondarySize}" Foreground="{DynamicResource MutedBrush}" Margin="0,4,0,0" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+                    </StackPanel>
+                    <Button x:Name="PinAction" Grid.Column="2" Click="PinClick" Width="{DynamicResource PinButtonWidth}" Margin="0" Padding="12,7" VerticalAlignment="Center" AutomationProperties.Name="{Binding AccessibleAction}" ToolTip="{Binding AccessibleAction}">
+                      <StackPanel Orientation="Horizontal">
+                        <Path x:Name="PinSymbol" Data="M 3,0 L 11,0 M 5,1 L 5,6 L 2,9 L 12,9 L 9,6 L 9,1 M 7,9 L 7,15" Stroke="{DynamicResource TextBrush}" StrokeThickness="1.4" Width="14" Height="15" Margin="0,0,6,0" Visibility="Collapsed" />
+                        <TextBlock Text="{Binding ActionLabel}" />
+                      </StackPanel>
+                    </Button>
+                  </Grid>
+                  <DataTemplate.Triggers>
+                    <DataTrigger Binding="{Binding Window.Icon}" Value="{x:Null}">
+                      <Setter TargetName="GenericWindow" Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Window.Pinned}" Value="True">
+                      <Setter TargetName="PinSymbol" Property="Visibility" Value="Visible" />
+                      <Setter TargetName="PinAction" Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+                    </DataTrigger>
+                  </DataTemplate.Triggers>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <TextBlock x:Name="Empty" Foreground="{DynamicResource MutedBrush}" Visibility="Collapsed" TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24" />
+          </Grid>
+        </Grid>
+        <ScrollViewer x:Name="SettingsPanel" Grid.Row="3" Visibility="Collapsed" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Disabled" Padding="0,0,8,0">
+          <StackPanel>
+            <Border Style="{StaticResource SectionCard}">
+              <StackPanel>
+                <TextBlock Text="{loc:Loc AppearanceAndWorkflow}" Style="{StaticResource SectionTitle}" />
+                <ui:SettingRow Margin="0,0,0,16">
+                  <TextBlock Text="{loc:Loc Language}" />
+                  <ComboBox x:Name="LanguageChoice" DisplayMemberPath="NativeName" SelectedValuePath="Id" SelectionChanged="LanguageChanged" AutomationProperties.Name="{loc:Loc Language}" />
+                </ui:SettingRow>
+                <ui:SettingRow>
+                  <TextBlock Text="{loc:Loc Theme}" />
+                  <ComboBox x:Name="ThemeChoice" DisplayMemberPath="Label" SelectedValuePath="Id" SelectionChanged="ThemeChanged" AutomationProperties.Name="{loc:Loc Theme}" />
+                </ui:SettingRow>
+                <DockPanel Margin="0,20,0,6">
+                  <TextBlock x:Name="OpacityValue" DockPanel.Dock="Right" />
+                  <TextBlock Text="{loc:Loc WindowOpacity}" />
+                </DockPanel>
+                <Slider x:Name="OpacityChoice" Minimum="60" Maximum="100" TickFrequency="5" SmallChange="5" LargeChange="10" IsSnapToTickEnabled="True" Value="100" ValueChanged="OpacityChanged" AutomationProperties.Name="{loc:Loc WindowOpacity}" Margin="0,0,0,16" />
+                <CheckBox x:Name="StartupChoice" Content="{loc:Loc StartWithWindows}" Click="StartupChanged" />
+              </StackPanel>
+            </Border>
+            <Border Style="{StaticResource SectionCard}">
+              <StackPanel>
+                <TextBlock Text="{loc:Loc Shortcuts}" Style="{StaticResource SectionTitle}" />
+                <TextBlock Text="{loc:Loc PickerShortcut}" Margin="0,0,0,8" />
+                <DockPanel>
+                  <Button x:Name="ApplyPickerButton" Content="{loc:Loc Apply}" Click="ApplyPicker" DockPanel.Dock="Right" Margin="8,0,0,0" VerticalAlignment="Top" IsEnabled="False" />
+                  <ui:ShortcutEditor x:Name="PickerKeys" AutomationProperties.Name="{loc:Loc PickerShortcut}" />
+                </DockPanel>
+                <TextBlock x:Name="PickerError" Foreground="{DynamicResource ErrorBrush}" Visibility="Collapsed" Margin="0,6,0,0" AutomationProperties.LiveSetting="Assertive" />
+                <TextBlock Text="{loc:Loc ToggleShortcut}" Margin="0,16,0,8" />
+                <DockPanel>
+                  <Button x:Name="ApplyToggleButton" Content="{loc:Loc Apply}" Click="ApplyToggle" DockPanel.Dock="Right" Margin="8,0,0,0" VerticalAlignment="Top" IsEnabled="False" />
+                  <ui:ShortcutEditor x:Name="ToggleKeys" AutomationProperties.Name="{loc:Loc ToggleShortcut}" />
+                </DockPanel>
+                <TextBlock x:Name="ToggleError" Foreground="{DynamicResource ErrorBrush}" Visibility="Collapsed" Margin="0,6,0,0" AutomationProperties.LiveSetting="Assertive" />
+              </StackPanel>
+            </Border>
+            <Border Style="{StaticResource SectionCard}">
+              <StackPanel>
+                <TextBlock Text="{loc:Loc AboutAndUpdates}" Style="{StaticResource SectionTitle}" />
+                <TextBlock Text="Voltura HardTop" FontWeight="SemiBold" />
+                <TextBlock x:Name="VersionLabel" Margin="0,6,0,16" />
+                <CheckBox x:Name="AutomaticChoice" Content="{loc:Loc DownloadUpdatesAutomatically}" Click="AutomaticChanged" Margin="0,0,0,16" />
+                <TextBlock x:Name="ManualUpdateNotice" Text="{loc:Loc DownloadUpdatesManuallyForThisCopy}" Margin="0,0,0,16" />
+                <TextBlock x:Name="UpdateLabel" Margin="0,0,0,12" AutomationProperties.LiveSetting="Polite" />
+                <ProgressBar x:Name="UpdateProgress" Height="5" Minimum="0" Maximum="100" Visibility="Collapsed" Margin="0,0,0,12" />
+                <WrapPanel>
+                  <Button x:Name="CheckUpdateButton" Content="{loc:Loc CheckForUpdates}" Click="CheckUpdates" Margin="0,0,8,8" />
+                  <Button x:Name="DownloadPageButton" Content="{loc:Loc OpenDownloads}" Click="DownloadPageClick" Margin="0,0,8,8" />
+                  <Button x:Name="CancelUpdateButton" Content="{loc:Loc Cancel}" Click="CancelUpdate" Margin="0,0,8,8" Visibility="Collapsed" />
+                  <Button x:Name="InstallButton" Content="{loc:Loc InstallAndRestart}" Click="InstallUpdate" Style="{StaticResource PrimaryButton}" Margin="0,0,0,8" Visibility="Collapsed" />
+                </WrapPanel>
+                <TextBlock Text="{loc:Loc RestoreNote}" Margin="0,8,0,12" Foreground="{DynamicResource MutedBrush}" />
+                <TextBlock x:Name="PrivacyLabel" Foreground="{DynamicResource MutedBrush}" />
+              </StackPanel>
+            </Border>
+            <Border Style="{StaticResource SectionCard}" Margin="0">
+              <StackPanel>
+                <WrapPanel>
+                  <Button Content="{loc:Loc Website}" Click="WebsiteClick" Style="{StaticResource QuietButton}" Margin="0,0,8,8" />
+                  <Button Content="{loc:Loc ReportABug}" Click="HelpClick" Style="{StaticResource QuietButton}" Margin="0,0,8,8" />
+                  <Button Content="{loc:Loc License}" Click="LicenseClick" Style="{StaticResource QuietButton}" Margin="0,0,0,8" />
+                </WrapPanel>
+                <Button Content="{loc:Loc SupportVoltura}" Click="SponsorClick" HorizontalAlignment="Left" Margin="0" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+        <TextBlock x:Name="Status" Grid.Row="4" TextWrapping="Wrap" Margin="0,12,0,0" Visibility="Collapsed" AutomationProperties.LiveSetting="Polite" />
+      </Grid>
+    </DockPanel>
+  </Border>
+</Window>

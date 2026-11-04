@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Help
+    url: https://github.com/voltura/voltura-hardtop/blob/main/SUPPORT.md
+    about: Troubleshooting and support
+  - name: Private security report
+    url: https://github.com/voltura/voltura-hardtop/security/advisories/new
+    about: Report vulnerabilities privately
