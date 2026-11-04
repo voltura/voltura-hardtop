@@ -27,7 +27,7 @@ for i,scene in enumerate(scenes):
     draw.text((166,81),'VOLTURA',font=bold(30),fill='#3656E8')
     draw.text((72,180),'HARDTOP FOR WINDOWS',font=bold(22),fill='#5D6A83')
     draw.multiline_text((66,270),scene['title'],font=bold(67),fill='#18213A',spacing=14)
-    wrapped=textwrap.fill(scene['text'],width=44)
+    wrapped='\n'.join(textwrap.fill(line,width=44) for line in scene['text'].splitlines())
     draw.multiline_text((72,530),wrapped,font=regular(31),fill='#5D6A83',spacing=12)
     draw.text((72,914),'hardtop.voltura.se',font=bold(29),fill='#3656E8')
     draw.text((72,989),f'{i+1:02d} / 07   ·   Demo with sample windows',font=regular(21),fill='#5D6A83')
