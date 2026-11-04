@@ -16,7 +16,7 @@ public static class UpdateVerifier
         byte[] manifest,
         byte[] signature,
         string publicKey,
-        bool full
+        bool lightweight
     )
     {
         ArgumentNullException.ThrowIfNull(manifest);
@@ -53,9 +53,7 @@ public static class UpdateVerifier
             throw new InvalidDataException(Strings.Current["InvalidUpdateVersion"]);
         }
 
-        var expected = $"VolturaHardTop-Setup-{versionText}-win-x64{(full
-            ? "-full"
-            : "")}.exe";
+        var expected = InstallerName(versionText, lightweight);
         var matches = root.GetProperty("assets")
             .EnumerateArray()
             .Where(asset => asset.GetProperty("name").GetString() == expected)
@@ -82,6 +80,9 @@ public static class UpdateVerifier
 
         return new(versionText, new(expected, size, hash));
     }
+
+    internal static string InstallerName(string version, bool lightweight) =>
+        $"VolturaHardTop-Setup-{version}-win-x64{(lightweight ? "-lite" : "")}.exe";
 
     public static bool TryVersion(string text, out Version version)
     {

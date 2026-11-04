@@ -45,7 +45,11 @@ VIAddVersionKey /LANG=1033 "FileDescription" "Voltura HardTop Installer"
 VIAddVersionKey /LANG=1033 "FileVersion" "${VERSION}"
 VIAddVersionKey /LANG=1033 "ProductVersion" "${VERSION}"
 VIAddVersionKey /LANG=1033 "LegalCopyright" "Copyright ${U+00A9} 2021-2026 Voltura AB"
+!ifdef FRAMEWORK_DEPENDENT
+VIAddVersionKey /LANG=1033 "OriginalFilename" "VolturaHardTop-Setup-${VERSION}-win-x64-lite.exe"
+!else
 VIAddVersionKey /LANG=1033 "OriginalFilename" "VolturaHardTop-Setup-${VERSION}-win-x64.exe"
+!endif
 VIAddVersionKey /LANG=1033 "InternalName" "VolturaHardTopSetup"
 VIAddVersionKey /LANG=1033 "Comments" "Developer: Joakim Skoglund; Website: https://hardtop.voltura.se/; Support: https://github.com/voltura/voltura-hardtop/issues; License: MIT; Windows x64; Address: Voltura AB, H${U+00E4}stholmsv${U+00E4}gen 33, SE-131 71 Nacka, Sweden"
 !define MUI_ICON "..\src\Voltura.HardTop\Assets\App.ico"
@@ -60,6 +64,9 @@ VIAddVersionKey /LANG=1033 "Comments" "Developer: Joakim Skoglund; Website: http
 !define MUI_UNWELCOMEFINISHPAGE_BITMAP "assets\wizard.bmp"
 !define MUI_UNWELCOMEFINISHPAGE_BITMAP_STRETCH FitControl
 !define MUI_PAGE_CUSTOMFUNCTION_SHOW SmoothWelcomeArtwork
+!ifdef FRAMEWORK_DEPENDENT
+!define MUI_WELCOMEPAGE_TEXT "$(RuntimeNeeded)"
+!endif
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_LICENSE "..\LICENSE"
 !insertmacro MUI_PAGE_COMPONENTS
@@ -74,6 +81,7 @@ UninstPage custom un.Options
 !insertmacro MUI_UNPAGE_FINISH
 !include "languages.nsh"
 !include "artwork.nsh"
+!include "runtime.nsh"
 !insertmacro DefineSmoothArtwork ""
 !insertmacro DefineSmoothArtwork "un."
 Var SetupMutex
@@ -101,6 +109,16 @@ Section "Voltura HardTop" MainSection
  InitPluginsDir
  SetOutPath "$PLUGINSDIR"
  File "maintenance.ps1"
+ !ifdef FRAMEWORK_DEPENDENT
+ File "runtime-check.ps1"
+ File "runtime-download.ps1"
+ StrCpy $PrerequisiteRebootRequired 0
+ Call TestWindowsDesktopRuntime
+ Pop $0
+ ${If} $0 != 0
+  Call InstallWindowsDesktopRuntime
+ ${EndIf}
+ !endif
  nsExec::ExecToStack '"$WINDIR\Sysnative\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$PLUGINSDIR\maintenance.ps1" -InstallDirectory "$INSTDIR"'
  Pop $0
  Pop $1
@@ -109,9 +127,15 @@ Section "Voltura HardTop" MainSection
   SetErrorLevel 1
   Abort
  ${EndIf}
+ !include "${OBSOLETE_FILES}"
  SetOutPath "$INSTDIR"
  File /r "${PAYLOAD}\*"
  WriteUninstaller "$INSTDIR\Uninstall.exe"
+ !ifdef FRAMEWORK_DEPENDENT
+ WriteRegStr HKCU "${UNINSTALL_KEY}" "PackageVariant" "lite"
+ !else
+ WriteRegStr HKCU "${UNINSTALL_KEY}" "PackageVariant" "self-contained"
+ !endif
  WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayName" "Voltura HardTop"
  WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayVersion" "${VERSION}"
  WriteRegStr HKCU "${UNINSTALL_KEY}" "Publisher" "Voltura AB"

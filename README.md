@@ -27,7 +27,15 @@ Windows already made topmost by another app are left alone unless you change the
 
 For Windows x64 with .NET 10-supported Windows versions. Windows 11 is recommended; Windows 10 22H2 requires Microsoft's applicable servicing/ESU support.
 
-Download **VolturaHardTop-Setup-1.0.0-win-x64.exe** and run Setup. It installs for your Windows account and includes .NET: no separate runtime download is needed. The portable ZIP runs from a writable extracted folder without installation. Avoid running the original HardTop and Voltura HardTop simultaneously because their default picker shortcut is the same.
+Choose an installer from the [latest release](https://github.com/voltura/voltura-hardtop/releases/latest):
+
+| Package | Runtime |
+| --- | --- |
+| **VolturaHardTop-Setup-1.0.1-win-x64.exe** | Includes .NET 10; works offline. |
+| **VolturaHardTop-Setup-1.0.1-win-x64-lite.exe** | Smaller download; reuses .NET 10 Desktop x64 or downloads and installs it if missing. Internet and administrator approval may be needed for the shared runtime. |
+| **VolturaHardTop-1.0.1-win-x64.zip** | Portable, includes .NET; extract into a writable folder. |
+
+Both installers install HardTop for your Windows account and support verified automatic updates. Updates retain your chosen installer type. Avoid running the original HardTop and Voltura HardTop simultaneously because their default picker shortcut is the same.
 
 Installed copies check GitHub for stable updates at startup and every 24 hours. Verified updates download automatically; you choose when to install. Turn automatic downloads off in Preferences. Portable copies can check for updates and open the download page; they do not download or install updates automatically. Locally self-signed builds can show Windows publisher warnings; self-signing is not public certificate trust.
 
@@ -39,6 +47,7 @@ Requires Windows x64, PowerShell 7, .NET SDK 10.0.403, NSIS 3, Git, GitHub CLI, 
 ./scripts/setup.ps1
 ./scripts/check.ps1
 ./scripts/build.ps1
+./scripts/build.ps1 -FrameworkDependent
 ./scripts/package.ps1 -SkipBuild
 ```
 

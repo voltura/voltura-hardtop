@@ -6,13 +6,21 @@ Prerequisites: Windows x64, PowerShell 7, pinned .NET 10 SDK, NSIS 3, Git, authe
 2. Review and run the app. Incorporate visual feedback before final release preparation. Keep the old HardTop untouched.
 3. Update `Directory.Build.props` and `docs/release-VERSION.md`; verify the complete translations and changed behavior with `scripts/check.ps1`.
 4. Commit and push the exact reviewed source on `main`.
-5. Run `scripts/release.ps1`. It checks, builds once, patches native metadata using Worlds' conventions, signs the app, packages and signs Setup, and prepares a portable ZIP plus RSA-PSS-signed update metadata.
+5. Run `scripts/release.ps1`. It checks, builds each runtime variant once, patches native metadata using Worlds' conventions, signs the app, packages and signs the self-contained and lightweight installers, and prepares a portable ZIP plus RSA-PSS-signed update metadata.
 6. Run `scripts/release.ps1 -Publish` to upload those same bytes to a draft release and publish it only after all uploads succeed. Source, origin/main and the tag must match. Existing published bytes are never replaced.
 7. Mirror the prepared directory with `scripts/publish-sourceforge.ps1 -ReleaseDirectory artifacts/releases/VERSION`. It requires an existing SourceForge SSH key and verified host key. Browser upload is available when SSH is not configured. Set the x64 installer as the Windows default download.
 8. Run `scripts/publish-pages.ps1 -Publish` for the independent website. one.com supplies `hardtop CNAME voltura.github.io`; GitHub Pages supplies hosting and HTTPS.
 
-`build.ps1` and `package.ps1 -SkipBuild` can be used independently during development. Use `package.ps1 -Development -OutputDirectory artifacts/installer-preview-N` for an isolated installer identity. `-Candidate` tests the real per-user install location and update capability; its manifest is marked as development and cannot be published. Never publish development or candidate packages.
+`build.ps1`, `build.ps1 -FrameworkDependent` and `package.ps1 -SkipBuild` can be used independently during development. Use `package.ps1 -Development -OutputDirectory artifacts/installer-preview-N` for an isolated installer identity. `-Candidate` tests the real per-user install location and update capability; its manifest is marked as development and cannot be published. Never publish development or candidate packages.
 
 Signing uses a configured CurrentUser certificate with SHA-256 and an RFC 3161 timestamp. Current local certificates may be self-signed: the release manifest must say `SelfSigned`; this does not establish public Windows trust or remove SmartScreen warnings. No certificate is added to trusted stores.
 
 Verify app and installer metadata, signature/digest/timestamp, fresh install, upgrade, cancellation, uninstall, portable mode and the changed update path. Keep private keys and unrelated settings during uninstall. Validate live release metadata and product-site links after publication. There are no Actions-based build or release workflows.
+
+## Runtime variants
+
+Build outputs are isolated by version, source commit and variant under `artifacts/builds`. A build requires an empty output directory to prevent stale runtime files contaminating the lightweight payload. Package both variants from the same clean commit. The portable ZIP remains self-contained.
+
+The lightweight installer checks the actual payload runtimeconfig minimum against installed stable x64 Core and Desktop 10.0 patches. When missing, it downloads Microsoft's current Desktop 10.0 installer through the official `aka.ms` URL, requires valid Authenticode trust with Microsoft Corporation as authenticated publisher, then invokes it through Windows elevation. Denied elevation, invalid signatures, download failures and installer failures abort before closing HardTop or modifying application files. Exit 3010 preserves the reboot requirement. The shared runtime is never removed during HardTop uninstall.
+
+Both installer hashes are covered by the same RSA-PSS manifest. A missing `PackageVariant` registry value identifies existing 1.0.0 self-contained installs; `lite` selects lightweight updates. The standard asset name stays compatible with the 1.0.0 update verifier. Switching variants removes only explicitly known obsolete bundled runtime files, preserving application settings and unrelated files.

@@ -24,7 +24,7 @@ internal sealed class UpdateService : IAsyncDisposable
     private readonly CancellationTokenSource _stop = new();
     private readonly string _pending;
     private readonly string _publicKey;
-    private readonly bool _full;
+    private readonly bool _lightweight;
     private readonly Version _current;
     private readonly ApplicationLog? _log;
     private readonly Func<string, CancellationToken, Task> _install;
@@ -49,7 +49,7 @@ internal sealed class UpdateService : IAsyncDisposable
         HttpMessageHandler? handler = null,
         string? publicKey = null,
         bool? eligible = null,
-        bool? full = null,
+        bool? lightweight = null,
         Version? current = null,
         ApplicationLog? log = null,
         Func<string, CancellationToken, Task>? install = null
@@ -84,7 +84,7 @@ internal sealed class UpdateService : IAsyncDisposable
                         StringComparison.OrdinalIgnoreCase
                     )
             );
-        _full = full ?? (key?.GetValue("PackageVariant") as string == "full");
+        _lightweight = lightweight ?? (key?.GetValue("PackageVariant") as string == "lite");
 
         using var resource = Assembly
             .GetExecutingAssembly()
@@ -196,9 +196,7 @@ internal sealed class UpdateService : IAsyncDisposable
 
             var cached = await RecoverPendingAsync(token);
             var expected =
-                $"VolturaHardTop-Setup-{tag[1..]}-win-x64{(_full
-                    ? "-full"
-                    : "")}.exe";
+                UpdateVerifier.InstallerName(tag[1..], _lightweight);
 
             if (cached is not null && Path.GetFileName(cached) == expected)
             {
@@ -251,7 +249,7 @@ internal sealed class UpdateService : IAsyncDisposable
 
             failure = UpdateStatus.UpdateVerificationFailed;
 
-            var verified = UpdateVerifier.Verify(manifest, signature, _publicKey, _full);
+            var verified = UpdateVerifier.Verify(manifest, signature, _publicKey, _lightweight);
 
             if (verified.Version != tag[1..])
             {
@@ -387,7 +385,7 @@ internal sealed class UpdateService : IAsyncDisposable
             1024,
             token
         );
-        var verified = UpdateVerifier.Verify(manifest, signature, _publicKey, _full);
+        var verified = UpdateVerifier.Verify(manifest, signature, _publicKey, _lightweight);
         // A valid package already installed is ordinary cache expiry, not a verification error.
 
         if (Version.Parse(verified.Version) <= _current)

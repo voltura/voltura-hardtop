@@ -22,6 +22,7 @@ $reportPath=Join-Path $OutputDirectory 'release-manifest.json'
 if(!(Test-Path $reportPath)){
     & (Join-Path $PSScriptRoot 'check.ps1')
     & (Join-Path $PSScriptRoot 'build.ps1')
+    & (Join-Path $PSScriptRoot 'build.ps1') -FrameworkDependent
     & (Join-Path $PSScriptRoot 'package.ps1') -SkipBuild -OutputDirectory $OutputDirectory
 }
 $report=Get-Content $reportPath -Raw|ConvertFrom-Json

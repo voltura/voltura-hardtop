@@ -1,6 +1,7 @@
 #Requires -Version 7.0
 $ErrorActionPreference='Stop'
 $root=Split-Path $PSScriptRoot -Parent
+& (Join-Path $PSScriptRoot 'check-runtime.ps1')
 dotnet run --project (Join-Path $root 'tests/HardTop.Checks/HardTop.Checks.csproj') -c Release
 if ($LASTEXITCODE) { throw 'Behavior checks failed.' }
 dotnet run --project (Join-Path $root 'tests/HardTop.Checks/HardTop.Checks.csproj') -c Release --no-build -- --layout

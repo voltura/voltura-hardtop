@@ -117,6 +117,14 @@ internal static class Program
         var signature = rsa.SignData(manifest, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
         var verified = UpdateVerifier.Verify(manifest, signature, rsa.ExportSubjectPublicKeyInfoPem(), false);
         Assert(verified.Version == "1.0.0", "Signed update metadata accepted");
+        var liteAsset = new { name = "VolturaHardTop-Setup-1.0.0-win-x64-lite.exe", size = bytes.Length, sha256 = asset.sha256 };
+        var variants = JsonSerializer.SerializeToUtf8Bytes(new { schema = 1, product = "VolturaHardTop", architecture = "win-x64", version = "1.0.0", assets = new[] { asset, liteAsset } });
+        var variantsSignature = rsa.SignData(variants, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
+        Assert(UpdateVerifier.Verify(variants, variantsSignature, rsa.ExportSubjectPublicKeyInfoPem(), false).Asset.Name == asset.name, "Existing installations keep the self-contained update");
+        Assert(UpdateVerifier.Verify(variants, variantsSignature, rsa.ExportSubjectPublicKeyInfoPem(), true).Asset.Name == liteAsset.name, "Lightweight installations select the signed lightweight update");
+        bool missingLiteRejected = false;
+        try { UpdateVerifier.Verify(manifest, signature, rsa.ExportSubjectPublicKeyInfoPem(), true); } catch (InvalidDataException) { missingLiteRejected = true; }
+        Assert(missingLiteRejected, "Missing lightweight asset cannot silently switch installer type");
         var altered = manifest.ToArray(); altered[8] ^= 1;
         bool rejected = false; try { UpdateVerifier.Verify(altered, signature, rsa.ExportSubjectPublicKeyInfoPem(), false); } catch (InvalidDataException) { rejected = true; }
         Assert(rejected, "Tampered manifest rejected");
@@ -126,6 +134,15 @@ internal static class Program
         var metadata = JsonSerializer.SerializeToUtf8Bytes(new { tag_name = "v1.0.0", draft = false, prerelease = false, assets = new[] { asset.name, "VolturaHardTop-Update-1.0.0.json", "VolturaHardTop-Update-1.0.0.sig" }.Select(name => new { name, browser_download_url = "https://github.com/voltura/voltura-hardtop/releases/download/v1.0.0/" + name }) });
         var files = new Dictionary<string, byte[]> { ["latest"] = metadata, [asset.name] = bytes, ["VolturaHardTop-Update-1.0.0.json"] = manifest, ["VolturaHardTop-Update-1.0.0.sig"] = signature };
         var installed = false;
+        var liteMetadata = JsonSerializer.SerializeToUtf8Bytes(new { tag_name = "v1.0.0", draft = false, prerelease = false, assets = new[] { asset.name, liteAsset.name, "VolturaHardTop-Update-1.0.0.json", "VolturaHardTop-Update-1.0.0.sig" }.Select(name => new { name, browser_download_url = "https://github.com/voltura/voltura-hardtop/releases/download/v1.0.0/" + name }) });
+        var liteFiles = new Dictionary<string, byte[]> { ["latest"] = liteMetadata, [liteAsset.name] = bytes, ["VolturaHardTop-Update-1.0.0.json"] = variants, ["VolturaHardTop-Update-1.0.0.sig"] = variantsSignature };
+        var liteHttp = new FakeHttp(liteFiles);
+        await using (var updates = new UpdateService(new(Path.Combine(dir, "lite"), false, true), liteHttp, rsa.ExportSubjectPublicKeyInfoPem(), true, true, new(0, 9, 0)))
+        {
+            await updates.CheckAsync();
+            Assert(updates.State.Ready && Path.GetFileName(updates.State.Installer) == liteAsset.name, "Lightweight update downloads and verifies end to end");
+            Assert(!liteHttp.Requests.Contains(asset.name), "Lightweight update never requests the self-contained installer");
+        }
         await using (var updates = new UpdateService(new(dir, false, true), new FakeHttp(files), rsa.ExportSubjectPublicKeyInfoPem(), true, false, new(0, 9, 0), install: (_, _) => { installed = true; return Task.CompletedTask; }))
         {
             await updates.CheckAsync(); Assert(updates.State.Ready, "Complete HTTP download verifies and stages an update");
