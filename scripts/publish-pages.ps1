@@ -31,8 +31,7 @@ if($parent){$body.parents=@($parent)}
 $commit=Api POST "repos/$repository/git/commits" $body
 if($parent){Api PATCH "repos/$repository/git/refs/heads/gh-pages" @{sha=$commit.sha;force=$false}|Out-Null}
 else{Api POST "repos/$repository/git/refs" @{ref='refs/heads/gh-pages';sha=$commit.sha}|Out-Null}
-$repo=Api GET "repos/$repository" $null
-$method=if($repo.has_pages){'PUT'}else{'POST'}
-Api $method "repos/$repository/pages" @{build_type='legacy';source=@{branch='gh-pages';path='/'}}|Out-Null
+try { Api PUT "repos/$repository/pages" @{build_type='legacy';source=@{branch='gh-pages';path='/'}}|Out-Null }
+catch { Api POST "repos/$repository/pages" @{build_type='legacy';source=@{branch='gh-pages';path='/'}}|Out-Null }
 Api PUT "repos/$repository/pages" @{cname='hardtop.voltura.se'}|Out-Null
 Write-Host 'Published GitHub Pages source. Configure DNS, then enable HTTPS once the certificate is issued.'
