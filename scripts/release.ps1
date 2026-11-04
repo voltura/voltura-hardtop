@@ -39,8 +39,15 @@ if(!(Test-Path $source) -or !@($report.assets | Where-Object name -eq (Split-Pat
 $releases=InvokeGh -Arguments @('api',"repos/$repository/releases?per_page=100")|ConvertFrom-Json
 $existing=@($releases|Where-Object tag_name -eq $tag)
 if(!$existing.Count){InvokeGh -Arguments @('release','create',$tag,'--repo',$repository,'--target',$head,'--draft','--title',"Voltura HardTop $version",'--notes-file',$notes)|Out-Null}
-$release=@(InvokeGh -Arguments @('api',"repos/$repository/releases?per_page=100")|ConvertFrom-Json|Where-Object tag_name -eq $tag)[0]
-if(!$release){throw 'Release draft was not created.'}
+# GitHub's release list can briefly lag a successful draft-creation response.
+$release=$null
+for($attempt=0;$attempt -lt 10;$attempt++){
+    $freshReleases=InvokeGh -Arguments @('api',"repos/$repository/releases?per_page=100")|ConvertFrom-Json
+    $release=@($freshReleases|Where-Object tag_name -eq $tag)[0]
+    if($release){break}
+    Start-Sleep -Milliseconds 500
+}
+if(!$release){throw 'Release draft was not visible after bounded retries. Prepared bytes are unchanged; retry publication.'}
 if($release.draft -and $release.target_commitish -ne $head){InvokeGh -Arguments @('release','edit',$tag,'--repo',$repository,'--target',$head,'--notes-file',$notes)|Out-Null}
 $release=InvokeGh -Arguments @('api',"repos/$repository/releases/$($release.id)")|ConvertFrom-Json
 $paths=$verified.Paths
