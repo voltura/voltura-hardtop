@@ -4,6 +4,9 @@ $ErrorActionPreference='Stop'
 $root=Split-Path $PSScriptRoot -Parent
 $repository='voltura/voltura-hardtop'
 $site=Join-Path $root 'site'
+$githubCli=(Get-Command gh.exe -CommandType Application -ErrorAction SilentlyContinue).Source
+if(!$githubCli){$githubCli=Join-Path $env:LOCALAPPDATA 'Voltura/BuildTools/GitHubCLI/bin/gh.exe'}
+if(!(Test-Path $githubCli)){throw 'Install the official GitHub CLI (gh.exe).'}
 foreach($name in @('index.html','style.css','CNAME','.nojekyll')){if(!(Test-Path (Join-Path $site $name))){throw "Site file missing: $name"}}
 if(!$Publish){Write-Host "Static Pages source is ready: $site. Add -Publish to deploy.";return}
 $scratch=Join-Path $root 'artifacts/pages';New-Item -ItemType Directory -Force $scratch|Out-Null
@@ -12,7 +15,7 @@ function Api([string]$Method,[string]$Endpoint,$Body){
     try{
         $ghArguments=@('api','--method',$Method,$Endpoint)
         if($null -ne $Body){[IO.File]::WriteAllText($request,($Body|ConvertTo-Json -Depth 12),[Text.UTF8Encoding]::new($false));$ghArguments+=@('--input',$request)}
-        $result=& gh @ghArguments
+        $result=& $githubCli @ghArguments
         if($LASTEXITCODE){throw "GitHub API request failed: $Method $Endpoint"}
         if($result){return (($result|Out-String)|ConvertFrom-Json)}
     }finally{if(Test-Path $request){Remove-Item -LiteralPath $request}}
