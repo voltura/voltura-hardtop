@@ -21,6 +21,8 @@ Performance workloads are available through `dotnet run --project tests/HardTop.
 
 Signing uses a configured CurrentUser certificate with SHA-256 and an RFC 3161 timestamp. Current local certificates may be self-signed: the release manifest must say `SelfSigned`; this does not establish public Windows trust or remove SmartScreen warnings. No certificate is added to trusted stores.
 
+HardTop 1.0.3 uses the same encrypted update-signing key as Voltura Air. The local `signing.json` can reference that file through `updateKeyPath` and name the passphrase environment variable through `updateKeyPassphraseVariable`. Back up the encrypted key and keep its passphrase separately. Releases before 1.0.3 need a one-time manual upgrade to trust the new key.
+
 Verify app and installer metadata, signature/digest/timestamp, fresh install, upgrade, cancellation, uninstall, portable mode and the changed update path. Keep private keys and unrelated settings during uninstall. Validate live release metadata and product-site links after publication. There are no Actions-based build or release workflows.
 
 ## Runtime variants

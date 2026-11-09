@@ -11,10 +11,12 @@ if(!($Development -or $Candidate) -and (& git -C $root status --porcelain | Out-
 # Check the established update identity before building or creating output. A different
 # private key would produce installers that existing copies can never authenticate.
 $signingDirectory=Join-Path $env:LOCALAPPDATA 'Voltura/HardTop/Signing'
-$updateKeyPath=Join-Path $signingDirectory 'updates.private.pem'
+. (Join-Path $PSScriptRoot 'update-signing.ps1')
+$configPath=Join-Path $signingDirectory 'signing.json'
+$config=if(Test-Path -LiteralPath $configPath){Get-Content -LiteralPath $configPath -Raw|ConvertFrom-Json}
 $updateKey=[Security.Cryptography.RSA]::Create()
 try {
-    $updateKey.ImportFromPem([IO.File]::ReadAllText($updateKeyPath))
+    Import-HardTopUpdateKey $updateKey $signingDirectory $config
     $publishedKey=[Security.Cryptography.RSA]::Create()
     try {
         $publishedKey.ImportFromPem([IO.File]::ReadAllText((Join-Path $root 'src/Voltura.HardTop/Updates/public.pem')))
@@ -35,7 +37,7 @@ foreach($variant in 'self-contained','lite'){
 }
 New-Item -ItemType Directory -Force $OutputDirectory | Out-Null
 $OutputDirectory=(Resolve-Path $OutputDirectory).Path
-$config=Get-Content (Join-Path $env:LOCALAPPDATA 'Voltura/HardTop/Signing/signing.json') -Raw | ConvertFrom-Json
+if(!$config){throw 'HardTop signing.json is missing.'}
 $sign=@{CertificateThumbprint=$config.certificateThumbprint;TimestampUrl=[uri]$config.timestampUrl;AllowSelfSigned=[bool]$config.allowSelfSigned}
 $installerAssets=@()
 $signedFiles=@{}
@@ -100,7 +102,7 @@ $manifest=@{schema=1;product='VolturaHardTop';architecture='win-x64';version=$ve
 $manifestPath=Join-Path $OutputDirectory "VolturaHardTop-Update-$version.json"
 [IO.File]::WriteAllText($manifestPath,($manifest|ConvertTo-Json -Depth 5),[Text.UTF8Encoding]::new($false))
 $rsa=[Security.Cryptography.RSA]::Create()
-try{$rsa.ImportFromPem([IO.File]::ReadAllText($updateKeyPath));$signature=$rsa.SignData([IO.File]::ReadAllBytes($manifestPath),[Security.Cryptography.HashAlgorithmName]::SHA256,[Security.Cryptography.RSASignaturePadding]::Pss);[IO.File]::WriteAllBytes((Join-Path $OutputDirectory "VolturaHardTop-Update-$version.sig"),$signature)}finally{$rsa.Dispose()}
+try{Import-HardTopUpdateKey $rsa $signingDirectory $config;$signature=$rsa.SignData([IO.File]::ReadAllBytes($manifestPath),[Security.Cryptography.HashAlgorithmName]::SHA256,[Security.Cryptography.RSASignaturePadding]::Pss);[IO.File]::WriteAllBytes((Join-Path $OutputDirectory "VolturaHardTop-Update-$version.sig"),$signature)}finally{$rsa.Dispose()}
 if(!($Development -or $Candidate)){
     $source=Join-Path $OutputDirectory "VolturaHardTop-Source-$version.zip"
     & git -C $root archive --format=zip "--prefix=VolturaHardTop-$version/" "--output=$source" $commit

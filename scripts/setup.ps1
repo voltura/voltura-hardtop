@@ -4,8 +4,11 @@ $root = Split-Path $PSScriptRoot -Parent
 $private = Join-Path $env:LOCALAPPDATA 'Voltura/HardTop/Signing'
 New-Item -ItemType Directory -Force $private | Out-Null
 $key = Join-Path $private 'updates.private.pem'
+$config=Join-Path $private 'signing.json'
+$signing=if(Test-Path -LiteralPath $config){Get-Content -LiteralPath $config -Raw|ConvertFrom-Json}
+. (Join-Path $PSScriptRoot 'update-signing.ps1')
 $public = Join-Path $root 'src/Voltura.HardTop/Updates/public.pem'
-if (!(Test-Path $key)) {
+if (!$signing.updateKeyPath -and !(Test-Path $key)) {
     if (Test-Path $public) { throw 'The public update key exists but the private key is missing. Restore the private key; do not silently rotate a published key.' }
     $rsa = [Security.Cryptography.RSA]::Create(3072)
     try { [IO.File]::WriteAllText($key,$rsa.ExportRSAPrivateKeyPem()); [IO.File]::WriteAllText($public,$rsa.ExportSubjectPublicKeyInfoPem()) } finally { $rsa.Dispose() }
@@ -14,9 +17,16 @@ if (!(Test-Path $key)) {
     if ($LASTEXITCODE) { throw 'Could not restrict private-key permissions.' }
 } else {
     $rsa=[Security.Cryptography.RSA]::Create()
-    try { $rsa.ImportFromPem([IO.File]::ReadAllText($key)); if (([IO.File]::ReadAllText($public)).Trim() -ne $rsa.ExportSubjectPublicKeyInfoPem().Trim()) { throw 'Signing keys do not match.' } } finally { $rsa.Dispose() }
+    $verificationKey=[Security.Cryptography.RSA]::Create()
+    try {
+        Import-HardTopUpdateKey $rsa $private $signing
+        $verificationKey.ImportFromPem([IO.File]::ReadAllText($public))
+        if ([Convert]::ToBase64String($verificationKey.ExportSubjectPublicKeyInfo()) -cne [Convert]::ToBase64String($rsa.ExportSubjectPublicKeyInfo())) { throw 'Signing keys do not match.' }
+    } finally {
+        $verificationKey.Dispose()
+        $rsa.Dispose()
+    }
 }
-$config=Join-Path $private 'signing.json'
 if (!(Test-Path $config)) {
     $certificate=Get-ChildItem Cert:\CurrentUser\My -CodeSigningCert | Where-Object { $_.HasPrivateKey -and $_.Subject -like '*Voltura AB*' -and $_.NotAfter -gt (Get-Date) } | Sort-Object NotAfter -Descending | Select-Object -First 1
     if (!$certificate) { $certificate=New-SelfSignedCertificate -Type CodeSigningCert -Subject 'CN=Voltura AB, O=Voltura AB, C=SE' -FriendlyName 'Voltura HardTop local code signing' -CertStoreLocation Cert:\CurrentUser\My -KeyAlgorithm RSA -KeyLength 3072 -KeyExportPolicy NonExportable -NotAfter (Get-Date).AddYears(3) }
