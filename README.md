@@ -16,7 +16,7 @@ Pin the windows you need above the rest. A modern Windows tray companion built w
 
 ## Use
 
-- Click the tray icon or press **Ctrl+Alt+Z** to find a window. Search by title or application, then select **Pin**.
+- Click the tray icon or press **Ctrl+Alt+Z** to find a window. Search by title or application, then select **Pin**. Press **Ctrl+F** to focus search and select the current filter.
 - Press **Ctrl+Alt+T** to toggle the active window directly. Both shortcuts are configurable.
 - Use **Pinned** to see topmost windows. Closing HardTop's window keeps it beside the clock; **Exit** restores its own pin changes and closes the app.
 - Choose from 21 languages, light/dark/system appearance, and optional startup with Windows.
@@ -31,9 +31,9 @@ Choose an installer from the [latest release](https://github.com/voltura/voltura
 
 | Package | Runtime |
 | --- | --- |
-| **VolturaHardTop-Setup-1.0.2-win-x64.exe** | Includes .NET 10; works offline. |
-| **VolturaHardTop-Setup-1.0.2-win-x64-lite.exe** | Smaller download; reuses .NET 10 Desktop x64 or downloads and installs it if missing. Internet and administrator approval may be needed for the shared runtime. |
-| **VolturaHardTop-1.0.2-win-x64.zip** | Portable, includes .NET; extract into a writable folder. |
+| **VolturaHardTop-Setup-1.0.3-win-x64.exe** | Includes .NET 10; works offline. |
+| **VolturaHardTop-Setup-1.0.3-win-x64-lite.exe** | Smaller download; reuses .NET 10 Desktop x64 or downloads and installs it if missing. Internet and administrator approval may be needed for the shared runtime. |
+| **VolturaHardTop-1.0.3-win-x64.zip** | Portable, includes .NET; extract into a writable folder. |
 
 Both installers install HardTop for your Windows account and support verified automatic updates. Updates retain your chosen installer type. Avoid running the original HardTop and Voltura HardTop simultaneously because their default picker shortcut is the same.
 
@@ -53,7 +53,7 @@ Requires Windows x64, PowerShell 7, .NET SDK 10.0.403, NSIS 3, Git, GitHub CLI, 
 
 Private signing keys stay outside Git. Published update keys must be preserved. Releases and installers are built locally, without GitHub Actions. See [release instructions](docs/releasing.md).
 
-[1.0.2 changes](docs/release-1.0.2.md) · [Review record](docs/review-1.0.2.md) · [Validation](docs/validation-1.0.2.md)
+[1.0.3 changes](docs/release-1.0.3.md) · [1.0.2 changes](docs/release-1.0.2.md) · [Review record](docs/review-1.0.2.md) · [Validation](docs/validation-1.0.2.md)
 
 ## Project
 

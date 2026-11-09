@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Voltura.HardTop;
@@ -192,11 +193,24 @@ internal static class LayoutChecks
         window.ShowWindows();
         window.Show();
         if(!refreshTimer.IsEnabled) throw new Exception("Visible picker is not scheduled for refresh");
+        var search = Control<TextBox>("Search");
+        search.Text = picker.Rows[0].Window.Title;
+        windowList.UpdateLayout();
+        var result = (ListBoxItem)windowList.ItemContainerGenerator.ContainerFromIndex(0);
+        if (!result.Focus() || !result.IsKeyboardFocused) throw new Exception("Picker result did not receive focus");
+        var find = window.InputBindings.OfType<KeyBinding>().Single(binding => binding.Key == Key.F && binding.Modifiers == ModifierKeys.Control);
+        if (find.Command is not RoutedCommand command || !command.CanExecute(null, result))
+            throw new Exception("Ctrl+F command is unavailable from a picker result");
+        command.Execute(null, result);
+        if (!search.IsKeyboardFocused || search.Text.Length == 0 || search.SelectedText != search.Text)
+            throw new Exception("Ctrl+F did not focus the search box and select the existing filter");
+        Console.WriteLine("PASS Ctrl+F command moves focus from a picker result and selects the filter.");
         window.WindowState=WindowState.Minimized;
         if(refreshTimer.IsEnabled) throw new Exception("Minimized picker continues polling windows");
         window.WindowState=WindowState.Normal;
         if(!refreshTimer.IsEnabled) throw new Exception("Restored picker does not resume refresh");
         window.ShowSettings();
+        if (command.CanExecute(null, Control<Button>("BackButton"))) throw new Exception("Picker search shortcut is enabled in Preferences");
         if(refreshTimer.IsEnabled) throw new Exception("Preferences continue scheduling unnecessary picker polling");
         window.Hide();
         Console.WriteLine("PASS minimized picker and preferences stop polling; restoring picker resumes it.");

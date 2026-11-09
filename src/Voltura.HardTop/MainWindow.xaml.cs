@@ -72,6 +72,12 @@ public partial class MainWindow : Window
             args.Cancel = true;
             Hide();
         };
+        InputBindings.Add(new KeyBinding(ApplicationCommands.Find, Key.F, ModifierKeys.Control));
+        CommandBindings.Add(new CommandBinding(ApplicationCommands.Find, (_, _) =>
+        {
+            Search.Focus();
+            Search.SelectAll();
+        }, (_, args) => args.CanExecute = PickerPanel.IsVisible));
         PreviewKeyDown += (_, args) =>
         {
             if (args.Key != Key.Escape)
